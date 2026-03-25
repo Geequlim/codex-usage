@@ -1,0 +1,113 @@
+.codex-menu-root {
+    width: 360px;
+    padding: 6px;
+    spacing: 8px;
+}
+
+.codex-menu-shell {
+    padding: 0;
+}
+
+.codex-usage-applet .applet-label {
+    padding: 0 4px;
+    font-weight: 700;
+}
+
+.codex-hero-card,
+.codex-window-card,
+.codex-footer-card {
+    padding: 10px 12px;
+    border-radius: 14px;
+    background-color: rgba(127, 127, 127, 0.16);
+    border: 1px solid rgba(127, 127, 127, 0.24);
+    spacing: 6px;
+}
+
+.codex-hero-card {
+    background-color: rgba(127, 127, 127, 0.20);
+}
+
+.codex-footer-card {
+    background-color: rgba(127, 127, 127, 0.12);
+}
+
+.codex-hero-header,
+.codex-card-header,
+.codex-stat-row {
+    spacing: 10px;
+}
+
+.codex-hero-title {
+    font-size: 15px;
+    font-weight: 700;
+}
+
+.codex-account-label {
+    font-size: 13px;
+    font-weight: 700;
+}
+
+.codex-context-label,
+.codex-card-detail,
+.codex-card-reset,
+.codex-status-label,
+.codex-hint-label {
+    font-size: 11px;
+    font-weight: 500;
+}
+
+.codex-status-badge {
+    padding: 4px 10px;
+    border-radius: 999px;
+    font-size: 10px;
+    font-weight: 700;
+    border: 1px solid rgba(127, 127, 127, 0.24);
+}
+
+.codex-status-live {
+    background-color: rgba(16, 185, 129, 0.12);
+    border-color: rgba(16, 185, 129, 0.28);
+}
+
+.codex-status-loading {
+    background-color: rgba(59, 130, 246, 0.12);
+    border-color: rgba(59, 130, 246, 0.28);
+}
+
+.codex-status-error {
+    background-color: rgba(248, 113, 113, 0.12);
+    border-color: rgba(248, 113, 113, 0.28);
+}
+
+.codex-stat-box {
+    padding: 8px 10px;
+    border-radius: 12px;
+    background-color: rgba(127, 127, 127, 0.12);
+    spacing: 2px;
+}
+
+.codex-stat-label {
+    font-size: 10px;
+    font-weight: 600;
+}
+
+.codex-stat-value {
+    font-size: 13px;
+    font-weight: 700;
+}
+
+.codex-card-title {
+    font-size: 11px;
+    font-weight: 600;
+}
+
+.codex-card-percent {
+    font-size: 22px;
+    font-weight: 700;
+}
+
+.codex-progress-bar {
+    height: 14px;
+    margin-top: 4px;
+    margin-bottom: 2px;
+}
