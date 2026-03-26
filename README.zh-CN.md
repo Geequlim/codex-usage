@@ -72,6 +72,17 @@ chmod +x ~/.local/share/cinnamon/applets/codex-usage@geequlim/bin/fetch_codex_us
 
 前端 applet 再把这些数据渲染到面板摘要、tooltip 和弹出详情面板里。
 
+helper 启动 `codex` 时会按这个顺序补环境变量：
+
+1. Cinnamon / applet 进程当前已有的环境变量
+2. `/etc/environment`
+3. `~/.pam_environment`
+4. `~/.config/environment.d/*.conf`
+5. `~/.config/codex-usage/env`
+6. 如果仍然缺代理变量或找不到 `codex`，再尝试从用户交互 shell 读取环境
+
+这意味着如果你的代理只写在 `~/.zshrc` 里，而 Cinnamon 会话本身没有这些变量，旧版本 applet 可能会超时；现在的 helper 会尽量补齐。
+
 ## 项目结构
 
 ```text
@@ -95,6 +106,22 @@ screenshot.png
 - 数据依赖 `codex` / ChatGPT 后端接口可用
 - 修改 applet 代码后，通常需要重载 Cinnamon 才能看到最新效果
 - 当前没有设置页，刷新频率和文案样式写死在代码里
+
+## 代理排查
+
+如果 tooltip 里出现 `Timed out waiting for Codex app-server response`，先看错误末尾的诊断片段：
+
+- `codex=...` 表示 helper 实际找到的 `codex` 路径
+- `HTTP_PROXY/HTTPS_PROXY/ALL_PROXY` 会显示 `set` 或 `unset`
+- `env_sources=...` 表示这些变量来自当前 Cinnamon 环境、环境文件，还是交互 shell
+
+如果你的桌面会话没有继承代理，最稳妥的做法是把代理写到 `~/.config/environment.d/proxy.conf` 或 `~/.config/codex-usage/env`，例如：
+
+```ini
+HTTP_PROXY=http://127.0.0.1:1080
+HTTPS_PROXY=http://127.0.0.1:1080
+ALL_PROXY=socks5://127.0.0.1:1080
+```
 
 ## 打包说明
 

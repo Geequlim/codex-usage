@@ -74,6 +74,17 @@ Finally, add `Codex Usage` from the Cinnamon Applets settings UI.
 
 The Cinnamon applet then renders that data into the panel label, tooltip, and popup detail view.
 
+When the helper starts `codex`, it resolves environment variables in this order:
+
+1. The current Cinnamon / applet process environment
+2. `/etc/environment`
+3. `~/.pam_environment`
+4. `~/.config/environment.d/*.conf`
+5. `~/.config/codex-usage/env`
+6. If proxy variables are still missing, or `codex` is not on `PATH`, it probes the user's interactive shell as a fallback
+
+This matters because many desktop sessions do not inherit proxy variables that only exist in `~/.zshrc` or `~/.bashrc`.
+
 ## Project Structure
 
 ```text
@@ -97,6 +108,22 @@ screenshot.png
 - Data depends on `codex` / ChatGPT backend availability
 - Cinnamon usually needs to be reloaded after applet code changes
 - There is no settings UI yet; refresh interval and most presentation details are hard-coded
+
+## Proxy Troubleshooting
+
+If the tooltip shows `Timed out waiting for Codex app-server response`, look at the diagnostic suffix in the error:
+
+- `codex=...` shows the executable path the helper actually found
+- `HTTP_PROXY/HTTPS_PROXY/ALL_PROXY` show `set` or `unset`
+- `env_sources=...` shows whether values came from the current Cinnamon environment, env files, or the interactive shell fallback
+
+If your desktop session is not exporting proxy variables, the most reliable fix is to define them in `~/.config/environment.d/proxy.conf` or `~/.config/codex-usage/env`, for example:
+
+```ini
+HTTP_PROXY=http://127.0.0.1:1080
+HTTPS_PROXY=http://127.0.0.1:1080
+ALL_PROXY=socks5://127.0.0.1:1080
+```
 
 ## Packaging
 
