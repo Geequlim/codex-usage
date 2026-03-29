@@ -2,11 +2,12 @@
 
 [English](./README.md)
 
-一个 Cinnamon 面板插件，用来显示当前 `codex` 账号的额度状态。
+一个 Cinnamon 面板插件，用来显示当前 `codex` 账号的额度状态，并可选查询 GitHub Copilot 配额。
 
 它会在面板上展示两个窗口的剩余额度摘要，点击后弹出详情面板，查看：
 
 - 5 小时窗口和 7 天窗口的剩余额度
+- 可选的 GitHub Copilot premium interactions、聊天和补全额度
 - 当前账号与套餐
 - 最近更新时间
 - 窗口重置时间
@@ -16,10 +17,12 @@
 ## 特性
 
 - 直接通过 `codex app-server` 的 JSON-RPC 接口取数，不解析 TUI 文本
+- 可选通过 `gh api /copilot_internal/user` 查询 GitHub Copilot 额度
 - 面板摘要 + 点击展开详情面板
 - 支持简体中文和英文，自动跟随系统语言
 - 自带图标资源，既能用于面板，也能用于 Cinnamon 小工具管理列表
-- 每 5 分钟自动刷新一次
+- 支持配置查询频率
+- 支持右键直接打开配置页
 - 打开详情面板时立即刷新一次
 
 ## 预览
@@ -32,6 +35,7 @@
 
 - Cinnamon
 - `codex` CLI，且已登录
+- 可选：`gh` CLI，且已登录具备 Copilot user 权限的 GitHub 账号
 - `python3`
 
 ## 安装
@@ -50,6 +54,7 @@
 mkdir -p ~/.local/share/cinnamon/applets
 cp -r codex-usage@geequlim ~/.local/share/cinnamon/applets/
 chmod +x ~/.local/share/cinnamon/applets/codex-usage@geequlim/bin/fetch_codex_usage.py
+chmod +x ~/.local/share/cinnamon/applets/codex-usage@geequlim/bin/fetch_copilot_usage.py
 ```
 
 然后重新加载 Cinnamon：
@@ -58,6 +63,27 @@ chmod +x ~/.local/share/cinnamon/applets/codex-usage@geequlim/bin/fetch_codex_us
 - Wayland: 注销并重新登录
 
 最后在 Cinnamon 的 Applets 设置里添加 `Codex Usage`。
+
+## 配置
+
+右键点击 applet，选择 `配置...` 即可打开设置页。
+
+当前支持：
+
+- 设置自动查询频率（分钟）
+- 控制是否启用 GitHub Copilot 额度查询
+
+启用 Copilot 查询后，helper 会调用：
+
+```bash
+gh api \
+  -H "Accept: application/json" \
+  -H "Editor-Version: vscode/1.96.2" \
+  -H "X-Github-Api-Version: 2025-04-01" \
+  /copilot_internal/user
+```
+
+要求当前环境里的 `gh` 已完成登录，并且该账号具备 Copilot user 权限。
 
 ## 工作原理
 
@@ -69,6 +95,11 @@ chmod +x ~/.local/share/cinnamon/applets/codex-usage@geequlim/bin/fetch_codex_us
 4. 调用 `account/read`
 5. 调用 `account/rateLimits/read`
 6. 把结果整理成 applet 更易消费的 JSON
+
+`codex-usage@geequlim/bin/fetch_copilot_usage.py` 是独立实现的，它会：
+
+1. 调用 `gh api /copilot_internal/user`
+2. 把 Copilot quota snapshots 整理成 applet 更易消费的 JSON
 
 前端 applet 再把这些数据渲染到面板摘要、tooltip 和弹出详情面板里。
 
@@ -93,9 +124,12 @@ codex-usage@geequlim/
   codex.svg
   icon.png
   metadata.json
+  settings-schema.json
   stylesheet.css
   bin/
+    runtime_env.py
     fetch_codex_usage.py
+    fetch_copilot_usage.py
 
 install.sh
 screenshot.png
@@ -105,7 +139,7 @@ screenshot.png
 
 - 数据依赖 `codex` / ChatGPT 后端接口可用
 - 修改 applet 代码后，通常需要重载 Cinnamon 才能看到最新效果
-- 当前没有设置页，刷新频率和文案样式写死在代码里
+- GitHub Copilot 查询依赖 `gh` CLI 登录状态和 GitHub 侧权限
 
 ## 代理排查
 

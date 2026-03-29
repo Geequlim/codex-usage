@@ -13,6 +13,49 @@
     font-weight: 700;
 }
 
+.codex-panel-copilot-container {
+    padding-top: 0;
+    padding-bottom: 0;
+}
+
+.codex-panel-copilot-box {
+    padding-left: 6px;
+    padding-right: 2px;
+    padding-top: 0;
+    padding-bottom: 0;
+    color: inherit;
+}
+
+.codex-panel-copilot-icon-bin {
+    min-width: 26px;
+    padding-top: 0;
+    padding-bottom: 0;
+}
+
+.codex-panel-copilot-box .applet-icon {
+    padding-left: 0;
+    padding-right: 3px;
+    padding-top: 0;
+    padding-bottom: 0;
+    color: inherit;
+}
+
+.codex-panel-copilot-icon {
+    color: inherit;
+}
+
+.codex-panel-copilot-value {
+    padding-left: 0;
+    padding-top: 0;
+    padding-bottom: 0;
+    font-size: 1.06em;
+    font-weight: 700;
+}
+
+.codex-card-header-copy {
+    spacing: 1px;
+}
+
 .codex-hero-card,
 .codex-window-card,
 .codex-footer-card {
@@ -37,14 +80,31 @@
     spacing: 10px;
 }
 
+.codex-card-meta-row {
+    spacing: 0;
+}
+
+.codex-card-meta-label {
+    text-align: right;
+    font-size: 11px;
+    font-weight: 600;
+}
+
 .codex-hero-title {
-    font-size: 15px;
+    font-size: 16px;
     font-weight: 700;
 }
 
 .codex-account-label {
-    font-size: 13px;
+    font-size: 14px;
     font-weight: 700;
+}
+
+.codex-card-subtitle {
+    font-size: 13px;
+    font-weight: 600;
+    padding-top: 0;
+    padding-bottom: 0;
 }
 
 .codex-context-label,
@@ -52,14 +112,14 @@
 .codex-card-reset,
 .codex-status-label,
 .codex-hint-label {
-    font-size: 11px;
-    font-weight: 500;
+    font-size: 12px;
+    font-weight: 600;
 }
 
 .codex-status-badge {
     padding: 4px 10px;
     border-radius: 999px;
-    font-size: 10px;
+    font-size: 11px;
     font-weight: 700;
     border: 1px solid rgba(127, 127, 127, 0.24);
 }
@@ -79,6 +139,12 @@
     border-color: rgba(248, 113, 113, 0.28);
 }
 
+.codex-status-muted {
+    background-color: rgba(127, 127, 127, 0.10);
+    border-color: rgba(127, 127, 127, 0.18);
+    opacity: 0.62;
+}
+
 .codex-stat-box {
     padding: 8px 10px;
     border-radius: 12px;
@@ -87,12 +153,12 @@
 }
 
 .codex-stat-label {
-    font-size: 10px;
+    font-size: 11px;
     font-weight: 600;
 }
 
 .codex-stat-value {
-    font-size: 13px;
+    font-size: 14px;
     font-weight: 700;
 }
 
@@ -101,7 +167,17 @@
     font-weight: 600;
 }
 
+.codex-copilot-title {
+    font-size: 16px;
+    font-weight: 700;
+}
+
 .codex-card-percent {
+    font-size: 22px;
+    font-weight: 700;
+}
+
+.codex-summary-value {
     font-size: 22px;
     font-weight: 700;
 }
@@ -110,4 +186,9 @@
     height: 14px;
     margin-top: 4px;
     margin-bottom: 2px;
+}
+
+.codex-copilot-card {
+    background-color: rgba(127, 127, 127, 0.16);
+    border-color: rgba(127, 127, 127, 0.24);
 }

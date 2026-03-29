@@ -2,13 +2,14 @@
 
 [简体中文](./README.zh-CN.md)
 
-A Cinnamon panel applet for monitoring the current usage state of your `codex` account.
+A Cinnamon panel applet for monitoring the current usage state of your `codex` account, with optional GitHub Copilot quota lookup.
 
 It shows a compact remaining-quota summary in the panel, and opens a detailed popup when clicked.
 
 The popup includes:
 
 - Remaining quota for the 5-hour and 7-day windows
+- Optional GitHub Copilot premium interactions, chat, and completions quota
 - Current account and plan
 - Last updated time
 - Reset time for each usage window
@@ -18,10 +19,12 @@ The popup includes:
 ## Features
 
 - Reads data directly from `codex app-server` over JSON-RPC
+- Optionally reads GitHub Copilot quota via `gh api /copilot_internal/user`
 - Compact panel summary plus a detailed popup panel
 - Simplified Chinese and English, auto-detected from system locale
 - Uses bundled icon assets for both the panel and the Cinnamon applet manager
-- Auto refresh every 5 minutes
+- Configurable auto refresh interval
+- Right click to open the applet settings
 - Immediate refresh whenever the detail panel is opened
 
 ## Preview
@@ -34,6 +37,7 @@ The popup includes:
 
 - Cinnamon
 - `codex` CLI installed and signed in
+- Optional: `gh` CLI installed and signed in with Copilot user access
 - `python3`
 
 ## Install
@@ -52,6 +56,7 @@ Option 2, copy the applet directory directly:
 mkdir -p ~/.local/share/cinnamon/applets
 cp -r codex-usage@geequlim ~/.local/share/cinnamon/applets/
 chmod +x ~/.local/share/cinnamon/applets/codex-usage@geequlim/bin/fetch_codex_usage.py
+chmod +x ~/.local/share/cinnamon/applets/codex-usage@geequlim/bin/fetch_copilot_usage.py
 ```
 
 Then reload Cinnamon:
@@ -60,6 +65,27 @@ Then reload Cinnamon:
 - Wayland: log out and log back in
 
 Finally, add `Codex Usage` from the Cinnamon Applets settings UI.
+
+## Settings
+
+Right click the applet and choose `Configure...`.
+
+Available settings:
+
+- Refresh interval in minutes
+- Whether GitHub Copilot quota lookup is enabled
+
+If you enable Copilot lookup, the applet will call:
+
+```bash
+gh api \
+  -H "Accept: application/json" \
+  -H "Editor-Version: vscode/1.96.2" \
+  -H "X-Github-Api-Version: 2025-04-01" \
+  /copilot_internal/user
+```
+
+The `gh` environment must already be authenticated for a user that has Copilot quota access.
 
 ## How It Works
 
@@ -71,6 +97,11 @@ Finally, add `Codex Usage` from the Cinnamon Applets settings UI.
 4. Calls `account/read`
 5. Calls `account/rateLimits/read`
 6. Normalizes the response into a simpler JSON payload for the applet
+
+`codex-usage@geequlim/bin/fetch_copilot_usage.py` is implemented separately and:
+
+1. Calls `gh api /copilot_internal/user`
+2. Normalizes the Copilot quota snapshots into a simpler JSON payload for the applet
 
 The Cinnamon applet then renders that data into the panel label, tooltip, and popup detail view.
 
@@ -95,9 +126,12 @@ codex-usage@geequlim/
   codex.svg
   icon.png
   metadata.json
+  settings-schema.json
   stylesheet.css
   bin/
+    runtime_env.py
     fetch_codex_usage.py
+    fetch_copilot_usage.py
 
 install.sh
 screenshot.png
@@ -107,7 +141,7 @@ screenshot.png
 
 - Data depends on `codex` / ChatGPT backend availability
 - Cinnamon usually needs to be reloaded after applet code changes
-- There is no settings UI yet; refresh interval and most presentation details are hard-coded
+- GitHub Copilot quota lookup depends on `gh` CLI authentication and GitHub-side access
 
 ## Proxy Troubleshooting
 

@@ -1,14 +1,14 @@
 {
   "uuid": "codex-usage@geequlim",
   "name": "Codex Usage",
-  "description": "Show Codex usage quota in the Cinnamon panel",
+  "description": "Show Codex usage and optional GitHub Copilot quota in the Cinnamon panel",
   "author": "Geequlim",
   "website": "https://github.com/Geequlim/codex-usage",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "cinnamon-version": [
     "6.6"
   ],
-  "last-edited": 1774437315,
+  "last-edited": 1774793200,
   "icon": "utilities-terminal",
   "max-instances": "-1"
 }

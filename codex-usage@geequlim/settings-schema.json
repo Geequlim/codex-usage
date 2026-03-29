@@ -1,0 +1,18 @@
+{
+    "refresh-interval-minutes": {
+        "type": "spinbutton",
+        "default": 5,
+        "min": 1,
+        "max": 240,
+        "step": 1,
+        "units": "分钟 / min",
+        "description": "查询频率",
+        "tooltip": "设置自动查询 Codex 和可选 Copilot 数据的时间间隔。"
+    },
+    "enable-copilot-query": {
+        "type": "switch",
+        "default": false,
+        "description": "启用 GitHub Copilot 额度查询",
+        "tooltip": "开启后会调用 gh api /copilot_internal/user。要求本机已安装 gh，并且已登录具备 Copilot user 权限的账号。"
+    }
+}
