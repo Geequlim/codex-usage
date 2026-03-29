@@ -92,7 +92,7 @@
 
 .codex-hero-title {
     font-size: 16px;
-    font-weight: 700;
+    font-weight: 800;
 }
 
 .codex-account-label {
@@ -142,7 +142,6 @@
 .codex-status-muted {
     background-color: rgba(127, 127, 127, 0.10);
     border-color: rgba(127, 127, 127, 0.18);
-    opacity: 0.62;
 }
 
 .codex-stat-box {
@@ -163,13 +162,13 @@
 }
 
 .codex-card-title {
-    font-size: 11px;
-    font-weight: 600;
+    font-size: 12px;
+    font-weight: 700;
 }
 
 .codex-copilot-title {
     font-size: 16px;
-    font-weight: 700;
+    font-weight: 800;
 }
 
 .codex-card-percent {

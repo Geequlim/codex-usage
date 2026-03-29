@@ -3,6 +3,7 @@ const Cairo = imports.cairo;
 const Gio = imports.gi.Gio;
 const GLib = imports.gi.GLib;
 const Mainloop = imports.mainloop;
+const Main = imports.ui.main;
 const Pango = imports.gi.Pango;
 const PopupMenu = imports.ui.popupMenu;
 const Settings = imports.ui.settings;
@@ -40,6 +41,17 @@ const TRANSLATIONS = {
         openPanelHint: "Open the panel to inspect Codex and Copilot quota details.",
         panelLabelHint: "Panel label shows Codex windows and, when enabled, Copilot premium interactions.",
         clickRefreshHint: "Use the context menu to refresh immediately.",
+        refreshInProgress: "Refresh already in progress",
+        refreshInProgressBody: "Wait for the current refresh to finish.",
+        refreshSuccessTitle: "Refresh completed",
+        refreshSuccessCodexOnly: "Codex data updated.",
+        refreshSuccessBoth: "Codex and GitHub Copilot data updated.",
+        refreshPartialTitle: "Refresh completed with warnings",
+        refreshFailedTitle: "Refresh failed",
+        refreshStatusCodexOk: "Codex updated",
+        refreshStatusCopilotOk: "Copilot updated",
+        refreshStatusCodexFailed: "Codex failed: {error}",
+        refreshStatusCopilotFailed: "Copilot failed: {error}",
         unableToLoad: "Unable to load Codex data",
         checkLogin: "Check codex login and helper output",
         preparingSnapshot: "Preparing quota snapshot",
@@ -71,7 +83,7 @@ const TRANSLATIONS = {
         tooltipWaitingLine: "{name}: waiting for first successful sync",
         copilotTooltipTitle: "GitHub Copilot Usage",
         copilotTooltipSummary: "Left {remaining} / {entitlement} ({percent}%) | Reset {reset}",
-        copilotTooltipDetails: "Chat {chat} | Completions {completions} | {plan}",
+        copilotTooltipDetails: "Chat {chat} | Completions {completions} | {plan} | Updated {updated}",
         copilotUsageLine: "Requests {requests} | Chat {chat} | Completions {completions}",
         copilotSubtitle: "{login} | {plan}",
         copilotRequests: "Requests {value}",
@@ -143,6 +155,17 @@ const TRANSLATIONS = {
         openPanelHint: "打开面板可查看 Codex 和 Copilot 的额度详情。",
         panelLabelHint: "面板标签会显示 Codex 窗口额度，并在启用时附带 Copilot premium interactions。",
         clickRefreshHint: "如需立即同步，请使用右键菜单里的刷新。",
+        refreshInProgress: "刷新正在进行中",
+        refreshInProgressBody: "请等待当前刷新完成。",
+        refreshSuccessTitle: "刷新完成",
+        refreshSuccessCodexOnly: "Codex 数据已更新。",
+        refreshSuccessBoth: "Codex 和 GitHub Copilot 数据已更新。",
+        refreshPartialTitle: "刷新完成，但有告警",
+        refreshFailedTitle: "刷新失败",
+        refreshStatusCodexOk: "Codex 已更新",
+        refreshStatusCopilotOk: "Copilot 已更新",
+        refreshStatusCodexFailed: "Codex 失败：{error}",
+        refreshStatusCopilotFailed: "Copilot 失败：{error}",
         unableToLoad: "无法加载 Codex 数据",
         checkLogin: "请检查 codex 登录状态和 helper 输出",
         preparingSnapshot: "正在准备额度快照",
@@ -174,7 +197,7 @@ const TRANSLATIONS = {
         tooltipWaitingLine: "{name}：等待首次成功同步",
         copilotTooltipTitle: "Github Copilot 用量",
         copilotTooltipSummary: "剩余 {remaining} / {entitlement} ({percent}%) | 重置 {reset}",
-        copilotTooltipDetails: "对话 {chat} | 补全 {completions} | {plan}",
+        copilotTooltipDetails: "对话 {chat} | 补全 {completions} | {plan} | 更新 {updated}",
         copilotUsageLine: "请求 {requests} | 对话 {chat} | 补全 {completions}",
         copilotSubtitle: "{login} | {plan}",
         copilotRequests: "请求 {value}",
@@ -276,6 +299,12 @@ function createWrappedLabel(text, styleClass) {
     return label;
 }
 
+function applySecondaryTextStyle(label) {
+    label.add_style_class_name("popup-inactive-menu-item");
+    label.add_style_pseudo_class("insensitive");
+    return label;
+}
+
 function UsageMeter(title, accentColor) {
     this._init(title, accentColor);
 }
@@ -319,13 +348,13 @@ UsageMeter.prototype = {
         this._bar.connect("repaint", this._onRepaint.bind(this));
         this.actor.add_actor(this._bar);
 
-        this._detailLabel = createWrappedLabel("", "codex-card-detail");
+        this._detailLabel = applySecondaryTextStyle(createWrappedLabel("", "codex-card-detail"));
         this.actor.add_actor(this._detailLabel);
 
-        this._resetLabel = new St.Label({
+        this._resetLabel = applySecondaryTextStyle(new St.Label({
             text: "",
             style_class: "codex-card-reset"
-        });
+        }));
         this.actor.add_actor(this._resetLabel);
     },
 
@@ -404,7 +433,7 @@ SummaryCard.prototype = {
             style_class: "codex-summary-value"
         });
 
-        this._subtitleLabel = createWrappedLabel("", "codex-card-subtitle");
+        this._subtitleLabel = applySecondaryTextStyle(createWrappedLabel("", "codex-card-subtitle"));
         headerTextBox.add_actor(this._titleLabel);
         headerTextBox.add_actor(this._subtitleLabel);
         header.add_actor(headerTextBox);
@@ -419,25 +448,25 @@ SummaryCard.prototype = {
         this._bar.connect("repaint", this._onRepaint.bind(this));
         this.actor.add_actor(this._bar);
 
-        this._detailLabel = createWrappedLabel("", "codex-card-detail");
+        this._detailLabel = applySecondaryTextStyle(createWrappedLabel("", "codex-card-detail"));
         this.actor.add_actor(this._detailLabel);
 
         this._metaRow = new St.BoxLayout({
             style_class: "codex-card-meta-row",
             x_expand: true
         });
-        this._footerLabel = new St.Label({
+        this._footerLabel = applySecondaryTextStyle(new St.Label({
             text: "",
             style_class: "codex-card-reset",
             x_expand: true,
             y_align: St.Align.MIDDLE
-        });
+        }));
         this._metaSpacer = new St.Widget({ x_expand: true });
-        this._metaLabel = new St.Label({
+        this._metaLabel = applySecondaryTextStyle(new St.Label({
             text: "",
             style_class: "codex-status-badge codex-status-muted codex-card-meta-label",
             x_align: St.Align.END
-        });
+        }));
         this._metaRow.add_actor(this._footerLabel);
         this._metaRow.add_actor(this._metaSpacer);
         this._metaRow.add_actor(this._metaLabel);
@@ -515,6 +544,7 @@ class CodexUsageApplet extends Applet.TextIconApplet {
 
         this.setAllowedLayout(Applet.AllowedLayout.BOTH);
         this.actor.add_style_class_name("codex-usage-applet");
+        this.actor.connect("enter-event", this._onAppletEnter.bind(this));
         this._setupPanelCopilotIndicator();
         this._setPanelIcon();
         this.set_applet_label(this._buildPanelLabel(null, null, null, null));
@@ -653,7 +683,7 @@ class CodexUsageApplet extends Applet.TextIconApplet {
         this._accountLabel.clutter_text.ellipsize = Pango.EllipsizeMode.END;
         heroCard.add_actor(this._accountLabel);
 
-        this._contextLabel = createWrappedLabel(this._t("autoRefreshEvery", { value: DEFAULT_REFRESH_INTERVAL_MINUTES }), "codex-context-label");
+        this._contextLabel = applySecondaryTextStyle(createWrappedLabel(this._t("autoRefreshEvery", { value: DEFAULT_REFRESH_INTERVAL_MINUTES }), "codex-context-label"));
         this._contextLabel.visible = false;
 
         let statRow = new St.BoxLayout({
@@ -678,15 +708,15 @@ class CodexUsageApplet extends Applet.TextIconApplet {
         this._copilotCard = new SummaryCard(this._t("copilotTitle"));
         this._menuRoot.add_actor(this._copilotCard.actor);
 
-        this._statusLabel = createWrappedLabel(this._t("waitingFirstSync"), "codex-status-label");
-        this._hintLabel = createWrappedLabel(this._t("openPanelHint"), "codex-hint-label");
+        this._statusLabel = applySecondaryTextStyle(createWrappedLabel(this._t("waitingFirstSync"), "codex-status-label"));
+        this._hintLabel = applySecondaryTextStyle(createWrappedLabel(this._t("openPanelHint"), "codex-hint-label"));
     }
 
     _buildContextMenu() {
         this._applet_context_menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
 
         let refreshItem = new PopupMenu.PopupIconMenuItem(this._t("refreshNow"), "view-refresh-symbolic", St.IconType.SYMBOLIC);
-        refreshItem.connect("activate", this._refreshNow.bind(this));
+        refreshItem.connect("activate", () => this._refreshNow({ manual: true }));
         this._applet_context_menu.addMenuItem(refreshItem);
     }
 
@@ -696,10 +726,10 @@ class CodexUsageApplet extends Applet.TextIconApplet {
             style_class: "codex-stat-box",
             x_expand: true
         });
-        let caption = new St.Label({
+        let caption = applySecondaryTextStyle(new St.Label({
             text: label,
             style_class: "codex-stat-label"
-        });
+        }));
         let value = new St.Label({
             text: "--",
             style_class: "codex-stat-value"
@@ -752,7 +782,15 @@ class CodexUsageApplet extends Applet.TextIconApplet {
     }
 
     _onMenuStateChanged(menu, open) {
-        return;
+        if (open && !this._refreshing) {
+            this._render();
+        }
+    }
+
+    _onAppletEnter() {
+        if (!this._refreshing) {
+            this._render();
+        }
     }
 
     _onRefreshTimer() {
@@ -764,8 +802,14 @@ class CodexUsageApplet extends Applet.TextIconApplet {
         return translate(this._language, key, replacements);
     }
 
-    _refreshNow() {
+    _refreshNow(options) {
+        let refreshOptions = options || {};
+        let manual = Boolean(refreshOptions.manual);
+
         if (this._refreshing) {
+            if (manual) {
+                this._notifyRefreshResult(this._t("refreshInProgress"), this._t("refreshInProgressBody"));
+            }
             return;
         }
 
@@ -802,6 +846,10 @@ class CodexUsageApplet extends Applet.TextIconApplet {
             }
 
             this._render();
+
+            if (manual) {
+                this._notifyManualRefreshOutcome(codexResult, copilotResult);
+            }
         };
 
         this._spawnHelper(this._helperPath, (payload, error) => {
@@ -849,6 +897,43 @@ class CodexUsageApplet extends Applet.TextIconApplet {
         }
 
         this._activeSubprocesses.push(subprocess);
+    }
+
+    _notifyRefreshResult(title, body) {
+        if (body) {
+            Main.notify(title, body);
+            return;
+        }
+
+        Main.notify(title);
+    }
+
+    _notifyManualRefreshOutcome(codexResult, copilotResult) {
+        let codexOk = codexResult.payload !== null;
+        let copilotEnabled = this.enableCopilot;
+        let copilotOk = !copilotEnabled || copilotResult.payload !== null;
+
+        if (codexOk && copilotOk) {
+            this._notifyRefreshResult(
+                this._t("refreshSuccessTitle"),
+                copilotEnabled ? this._t("refreshSuccessBoth") : this._t("refreshSuccessCodexOnly")
+            );
+            return;
+        }
+
+        let parts = [];
+        parts.push(codexOk
+            ? this._t("refreshStatusCodexOk")
+            : this._t("refreshStatusCodexFailed", { error: this._singleLine(codexResult.error || "unknown") }));
+
+        if (copilotEnabled) {
+            parts.push(copilotOk
+                ? this._t("refreshStatusCopilotOk")
+                : this._t("refreshStatusCopilotFailed", { error: this._singleLine(copilotResult.error || "unknown") }));
+        }
+
+        let title = codexOk || copilotOk ? this._t("refreshPartialTitle") : this._t("refreshFailedTitle");
+        this._notifyRefreshResult(title, parts.join(" | "));
     }
 
     _render() {
@@ -1064,9 +1149,9 @@ class CodexUsageApplet extends Applet.TextIconApplet {
 
             pieces.push(this._t("tooltipMeta", {
                 planLabel: this._t("planTitle"),
-                plan: account.plan_type || rateLimit.plan_type || this._t("unknown"),
+                plan: this._formatPlanName(account.plan_type || rateLimit.plan_type || this._t("unknown")),
                 limitLabel: this._t("limitTitle"),
-                limit: rateLimit.limit_id || "codex",
+                limit: this._formatPlanName(rateLimit.limit_id || "codex"),
                 updatedLabel: this._t("updatedTitle"),
                 updated: this._formatUpdatedTime(codexPayload.updated_at)
             }));
@@ -1092,7 +1177,8 @@ class CodexUsageApplet extends Applet.TextIconApplet {
             pieces.push(this._t("copilotTooltipDetails", {
                 chat: this._copilotTooltipQuotaValue(this._getCopilotSnapshot(copilotPayload, "chat")),
                 completions: this._copilotTooltipQuotaValue(this._getCopilotSnapshot(copilotPayload, "completions")),
-                plan: this._formatPlanName(this._extractCopilotPlan(copilotPayload) || this._t("unknown"))
+                plan: this._formatPlanName(this._extractCopilotPlan(copilotPayload) || this._t("unknown")),
+                updated: this._formatUpdatedTime(copilotPayload.updated_at)
             }));
             pieces.push(this._t("copilotTooltipSummary", {
                 remaining: this._copilotTooltipRemainingValue(premium),
