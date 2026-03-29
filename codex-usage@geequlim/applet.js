@@ -996,7 +996,7 @@ class CodexUsageApplet extends Applet.TextIconApplet {
         }
 
         if (premium.unlimited) {
-            return this._language === "zh" ? "无限" : "unlimited";
+            return this._t("quotaUnlimitedShort");
         }
 
         return this._copilotTooltipRemainingValue(premium) + "/" + this._copilotTooltipEntitlementValue(premium);
@@ -1092,7 +1092,7 @@ class CodexUsageApplet extends Applet.TextIconApplet {
             pieces.push(this._t("copilotTooltipDetails", {
                 chat: this._copilotTooltipQuotaValue(this._getCopilotSnapshot(copilotPayload, "chat")),
                 completions: this._copilotTooltipQuotaValue(this._getCopilotSnapshot(copilotPayload, "completions")),
-                plan: this._extractCopilotPlan(copilotPayload) || this._t("unknown")
+                plan: this._formatPlanName(this._extractCopilotPlan(copilotPayload) || this._t("unknown"))
             }));
             pieces.push(this._t("copilotTooltipSummary", {
                 remaining: this._copilotTooltipRemainingValue(premium),
@@ -1334,7 +1334,7 @@ class CodexUsageApplet extends Applet.TextIconApplet {
         }
 
         if (snapshot.unlimited) {
-            return this._language === "zh" ? "无限" : "unlimited";
+            return this._t("quotaUnlimitedShort");
         }
 
         if (typeof snapshot.remaining === "number") {
@@ -1350,7 +1350,7 @@ class CodexUsageApplet extends Applet.TextIconApplet {
         }
 
         if (snapshot.unlimited) {
-            return this._language === "zh" ? "无限" : "unlimited";
+            return this._t("quotaUnlimitedShort");
         }
 
         if (typeof snapshot.remaining === "number") {
@@ -1366,7 +1366,7 @@ class CodexUsageApplet extends Applet.TextIconApplet {
         }
 
         if (snapshot.unlimited) {
-            return this._language === "zh" ? "无限" : "unlimited";
+            return this._t("quotaUnlimitedShort");
         }
 
         return this._formatCount(snapshot.remaining);
@@ -1378,7 +1378,7 @@ class CodexUsageApplet extends Applet.TextIconApplet {
         }
 
         if (snapshot.unlimited) {
-            return this._language === "zh" ? "无限" : "unlimited";
+            return this._t("quotaUnlimitedShort");
         }
 
         return typeof snapshot.entitlement === "number" ? this._formatCount(snapshot.entitlement) : "-";
@@ -1439,7 +1439,7 @@ class CodexUsageApplet extends Applet.TextIconApplet {
 
         if (snapshot.unlimited) {
             return this._t("copilotRequests", {
-                value: this._language === "zh" ? "无限" : "unlimited"
+                value: this._t("quotaUnlimitedShort")
             });
         }
 
