@@ -17,6 +17,46 @@ class ProtocolError(RuntimeError):
     pass
 
 
+def extract_json_object(text, marker):
+    if not text:
+        return None
+
+    marker_index = text.find(marker)
+    if marker_index == -1:
+        return None
+
+    start = text.find("{", marker_index + len(marker))
+    if start == -1:
+        return None
+
+    depth = 0
+    in_string = False
+    escape = False
+
+    for index in range(start, len(text)):
+        char = text[index]
+
+        if in_string:
+            if escape:
+                escape = False
+            elif char == "\\":
+                escape = True
+            elif char == '"':
+                in_string = False
+            continue
+
+        if char == '"':
+            in_string = True
+        elif char == "{":
+            depth += 1
+        elif char == "}":
+            depth -= 1
+            if depth == 0:
+                return text[start:index + 1]
+
+    return None
+
+
 def send_message(process, payload):
     process.stdin.write(json.dumps(payload) + "\n")
     process.stdin.flush()
@@ -84,6 +124,22 @@ def normalize_window(window_data):
     }
 
 
+def normalize_wham_window(window_data):
+    if not isinstance(window_data, dict):
+        return None
+
+    duration_seconds = window_data.get("limit_window_seconds")
+    duration_mins = None
+    if isinstance(duration_seconds, (int, float)):
+        duration_mins = int(duration_seconds // 60)
+
+    return {
+        "used_percent": window_data.get("used_percent"),
+        "window_duration_mins": duration_mins,
+        "resets_at": window_data.get("reset_at"),
+    }
+
+
 def normalize_credits(credits_data):
     if not isinstance(credits_data, dict):
         return None
@@ -123,6 +179,64 @@ def normalize_rate_limit(rate_limits_response):
     }
 
 
+def normalize_wham_usage(rate_limits_response):
+    if not isinstance(rate_limits_response, dict):
+        return None
+
+    primary = normalize_wham_window((rate_limits_response.get("rate_limit") or {}).get("primary_window"))
+    secondary = normalize_wham_window((rate_limits_response.get("rate_limit") or {}).get("secondary_window"))
+
+    return {
+        "account": {
+            "type": rate_limits_response.get("account_type"),
+            "email": rate_limits_response.get("email"),
+            "plan_type": rate_limits_response.get("plan_type"),
+        },
+        "requires_openai_auth": False,
+        "rate_limit": {
+            "limit_id": "codex",
+            "limit_name": "Codex",
+            "plan_type": rate_limits_response.get("plan_type"),
+            "primary": primary,
+            "secondary": secondary,
+            "credits": normalize_credits(rate_limits_response.get("credits")),
+        },
+        "updated_at": int(time.time()),
+    }
+
+
+def build_fallback_payload(error_message, account_response=None):
+    raw_json = extract_json_object(error_message, "body=")
+    if raw_json is None:
+        return None
+
+    try:
+        rate_limits_response = json.loads(raw_json)
+    except json.JSONDecodeError:
+        return None
+
+    if not isinstance(rate_limits_response, dict) or "rate_limit" not in rate_limits_response:
+        return None
+
+    payload = normalize_wham_usage(rate_limits_response)
+    if payload is None:
+        return None
+
+    account = payload["account"]
+    if isinstance(account_response, dict):
+        normalized_account = normalize_account(account_response.get("account"))
+        payload["requires_openai_auth"] = account_response.get("requiresOpenaiAuth")
+
+        if normalized_account.get("type") is not None:
+            account["type"] = normalized_account["type"]
+        if normalized_account.get("email"):
+            account["email"] = normalized_account["email"]
+        if normalized_account.get("plan_type") and not account.get("plan_type"):
+            account["plan_type"] = normalized_account["plan_type"]
+
+    return payload
+
+
 def fetch_usage_snapshot():
     child_env, env_sources = build_subprocess_env(required_commands=("codex",))
     codex_path = shutil.which("codex", path=child_env.get("PATH"))
@@ -157,7 +271,14 @@ def fetch_usage_snapshot():
         send_message(process, {"method": "initialized"})
 
         account_response = rpc(process, 2, "account/read", {})
-        rate_limits_response = rpc(process, 3, "account/rateLimits/read", None)
+
+        try:
+            rate_limits_response = rpc(process, 3, "account/rateLimits/read", None)
+        except Exception as exc:
+            fallback_payload = build_fallback_payload(str(exc), account_response)
+            if fallback_payload is not None:
+                return fallback_payload
+            raise
 
         return {
             "account": normalize_account(account_response.get("account")),

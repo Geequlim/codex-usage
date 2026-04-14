@@ -17,6 +17,9 @@ const MAX_REFRESH_INTERVAL_MINUTES = 240;
 const PRIMARY_ACCENT = { red: 16, green: 185, blue: 129 };
 const SECONDARY_ACCENT = { red: 59, green: 130, blue: 246 };
 const COPILOT_ACCENT = { red: 168, green: 85, blue: 247 };
+const PLAN_NAME_OVERRIDES = {
+    prolite: "Pro Lite"
+};
 
 const TRANSLATIONS = {
     en: {
@@ -834,6 +837,7 @@ class CodexUsageApplet extends Applet.TextIconApplet {
                 this._codexError = null;
             } else if (codexResult.error !== null) {
                 this._codexError = codexResult.error;
+                this._logErrorToLookingGlass("Codex refresh failed", codexResult.error);
             }
 
             if (this.enableCopilot) {
@@ -842,6 +846,7 @@ class CodexUsageApplet extends Applet.TextIconApplet {
                     this._copilotError = null;
                 } else if (copilotResult.error !== null) {
                     this._copilotError = copilotResult.error;
+                    this._logErrorToLookingGlass("Copilot refresh failed", copilotResult.error);
                 }
             }
 
@@ -908,6 +913,20 @@ class CodexUsageApplet extends Applet.TextIconApplet {
         Main.notify(title);
     }
 
+    _logErrorToLookingGlass(context, error) {
+        let message = error instanceof Error ? error.stack || error.message : String(error || "unknown");
+        let formatted = context + ": " + message;
+
+        if (typeof global !== "undefined" && global.logError) {
+            global.logError(new Error(formatted));
+            return;
+        }
+
+        if (typeof global !== "undefined" && global.log) {
+            global.log(formatted);
+        }
+    }
+
     _notifyManualRefreshOutcome(codexResult, copilotResult) {
         let codexOk = codexResult.payload !== null;
         let copilotEnabled = this.enableCopilot;
@@ -950,7 +969,7 @@ class CodexUsageApplet extends Applet.TextIconApplet {
 
         this._accountLabel.set_text(this._buildAccountLabel(codexPayload, copilotPayload));
         this._contextLabel.set_text(this._buildContextLabel(rateLimit));
-        this._planValue.set_text(this._formatPlanName(codexAccount.plan_type || rateLimit.plan_type || this._t("unknown")));
+        this._planValue.set_text(this._formatPlanName(rateLimit.plan_type || codexAccount.plan_type || this._t("unknown")));
         this._creditsValue.set_text(this._buildCreditsStatValue(credits));
         this._setPanelCopilotIndicator(copilotPayload);
         this._copilotCard.actor.visible = this.enableCopilot;
@@ -1149,7 +1168,7 @@ class CodexUsageApplet extends Applet.TextIconApplet {
 
             pieces.push(this._t("tooltipMeta", {
                 planLabel: this._t("planTitle"),
-                plan: this._formatPlanName(account.plan_type || rateLimit.plan_type || this._t("unknown")),
+                plan: this._formatPlanName(rateLimit.plan_type || account.plan_type || this._t("unknown")),
                 limitLabel: this._t("limitTitle"),
                 limit: this._formatPlanName(rateLimit.limit_id || "codex"),
                 updatedLabel: this._t("updatedTitle"),
@@ -1542,6 +1561,11 @@ class CodexUsageApplet extends Applet.TextIconApplet {
         let text = String(value || "").trim();
         if (text === "") {
             return "--";
+        }
+
+        let normalized = text.toLowerCase();
+        if (Object.prototype.hasOwnProperty.call(PLAN_NAME_OVERRIDES, normalized)) {
+            return PLAN_NAME_OVERRIDES[normalized];
         }
 
         return text.split(/[_\-\s]+/).map(part => {
