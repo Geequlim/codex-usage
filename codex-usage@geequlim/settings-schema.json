@@ -9,6 +9,12 @@
         "description": "查询频率",
         "tooltip": "设置自动查询 Codex 和可选 Copilot 数据的时间间隔。"
     },
+    "show-primary-window": {
+        "type": "switch",
+        "default": false,
+        "description": "显示 5 小时额度",
+        "tooltip": "开启后会同时显示 5 小时和 7 天窗口；关闭时仅显示 7 天窗口。"
+    },
     "enable-copilot-query": {
         "type": "switch",
         "default": false,

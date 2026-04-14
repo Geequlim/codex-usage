@@ -71,6 +71,7 @@ chmod +x ~/.local/share/cinnamon/applets/codex-usage@geequlim/bin/fetch_copilot_
 当前支持：
 
 - 设置自动查询频率（分钟）
+- 控制是否同时显示 5 小时额度；默认只显示 7 天窗口
 - 控制是否启用 GitHub Copilot 额度查询
 
 启用 Copilot 查询后，helper 会调用：

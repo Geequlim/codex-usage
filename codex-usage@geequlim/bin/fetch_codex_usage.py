@@ -11,6 +11,8 @@ from runtime_env import build_subprocess_env, summarize_runtime_context
 
 
 TIMEOUT_SECONDS = 20
+TRANSIENT_RETRY_ATTEMPTS = 3
+TRANSIENT_RETRY_DELAY_SECONDS = 5
 
 
 class ProtocolError(RuntimeError):
@@ -237,7 +239,21 @@ def build_fallback_payload(error_message, account_response=None):
     return payload
 
 
-def fetch_usage_snapshot():
+def is_transient_network_error(message):
+    text = str(message or "")
+    transient_markers = (
+        "Timed out waiting for Codex app-server response",
+        "connection reset",
+        "connection refused",
+        "network is unreachable",
+        "temporary failure",
+        "temporarily unavailable",
+    )
+
+    return any(marker in text for marker in transient_markers)
+
+
+def fetch_usage_snapshot_once():
     child_env, env_sources = build_subprocess_env(required_commands=("codex",))
     codex_path = shutil.which("codex", path=child_env.get("PATH"))
     if codex_path is None:
@@ -295,6 +311,23 @@ def fetch_usage_snapshot():
                 process.wait(timeout=2)
             except subprocess.TimeoutExpired:
                 process.kill()
+
+
+def fetch_usage_snapshot():
+    last_error = None
+
+    for attempt in range(1, TRANSIENT_RETRY_ATTEMPTS + 1):
+        try:
+            return fetch_usage_snapshot_once()
+        except Exception as exc:
+            last_error = exc
+            if attempt < TRANSIENT_RETRY_ATTEMPTS and is_transient_network_error(exc):
+                time.sleep(TRANSIENT_RETRY_DELAY_SECONDS * attempt)
+                continue
+            raise
+
+    if last_error is not None:
+        raise last_error
 
 
 def main():

@@ -42,7 +42,7 @@ const TRANSLATIONS = {
         waitingFirstSync: "Waiting for first sync",
         lastSnapshotHint: "The last successful snapshot stays visible until the next good refresh.",
         openPanelHint: "Open the panel to inspect Codex and Copilot quota details.",
-        panelLabelHint: "Panel label shows Codex windows and, when enabled, Copilot premium interactions.",
+        panelLabelHint: "Panel label shows the configured Codex window(s) and, when enabled, Copilot premium interactions.",
         clickRefreshHint: "Use the context menu to refresh immediately.",
         refreshInProgress: "Refresh already in progress",
         refreshInProgressBody: "Wait for the current refresh to finish.",
@@ -134,7 +134,8 @@ const TRANSLATIONS = {
         shortHour: "{value}h",
         shortDay: "{value}d",
         shortMinute: "{value}m",
-        panelLabel: "{leftName} {leftValue}  ·  {rightName} {rightValue}"
+        panelLabel: "{leftName} {leftValue}  ·  {rightName} {rightValue}",
+        panelLabelSingle: "{value}"
     },
     zh: {
         heroTitle: "Codex 用量",
@@ -156,7 +157,7 @@ const TRANSLATIONS = {
         waitingFirstSync: "等待首次同步",
         lastSnapshotHint: "会保留上一次成功的快照，直到下一次刷新成功。",
         openPanelHint: "打开面板可查看 Codex 和 Copilot 的额度详情。",
-        panelLabelHint: "面板标签会显示 Codex 窗口额度，并在启用时附带 Copilot premium interactions。",
+        panelLabelHint: "面板标签会显示已配置的 Codex 窗口额度，并在启用时附带 Copilot premium interactions。",
         clickRefreshHint: "如需立即同步，请使用右键菜单里的刷新。",
         refreshInProgress: "刷新正在进行中",
         refreshInProgressBody: "请等待当前刷新完成。",
@@ -248,7 +249,8 @@ const TRANSLATIONS = {
         shortHour: "{value}时",
         shortDay: "{value}天",
         shortMinute: "{value}分",
-        panelLabel: "{leftName} {leftValue}  ·  {rightName} {rightValue}"
+        panelLabel: "{leftName} {leftValue}  ·  {rightName} {rightValue}",
+        panelLabelSingle: "{value}"
     }
 };
 
@@ -538,11 +540,14 @@ class CodexUsageApplet extends Applet.TextIconApplet {
         this._codexError = null;
         this._copilotError = null;
         this._activeSubprocesses = [];
+        this._initialRefreshId = 0;
         this.refreshIntervalMinutes = DEFAULT_REFRESH_INTERVAL_MINUTES;
+        this.showPrimaryWindow = false;
         this.enableCopilot = false;
 
         this.settings = new Settings.AppletSettings(this, metadata.uuid, instanceId);
         this.settings.bind("refresh-interval-minutes", "refreshIntervalMinutes", this._onSettingsChanged.bind(this));
+        this.settings.bind("show-primary-window", "showPrimaryWindow", this._onSettingsChanged.bind(this));
         this.settings.bind("enable-copilot-query", "enableCopilot", this._onSettingsChanged.bind(this));
 
         this.setAllowedLayout(Applet.AllowedLayout.BOTH);
@@ -562,7 +567,7 @@ class CodexUsageApplet extends Applet.TextIconApplet {
         this._buildContextMenu();
         this._setMenuLoadingState();
         this._applySettings();
-        this._refreshNow();
+        this._scheduleInitialRefresh();
     }
 
     _setPanelIcon() {
@@ -754,6 +759,7 @@ class CodexUsageApplet extends Applet.TextIconApplet {
 
     _applySettings() {
         this.refreshIntervalMinutes = this._sanitizeRefreshInterval(this.refreshIntervalMinutes);
+        this.showPrimaryWindow = Boolean(this.showPrimaryWindow);
         this.enableCopilot = Boolean(this.enableCopilot);
         this._restartRefreshLoop();
 
@@ -784,6 +790,19 @@ class CodexUsageApplet extends Applet.TextIconApplet {
         );
     }
 
+    _scheduleInitialRefresh() {
+        if (this._initialRefreshId !== 0) {
+            Mainloop.source_remove(this._initialRefreshId);
+            this._initialRefreshId = 0;
+        }
+
+        this._initialRefreshId = Mainloop.timeout_add_seconds(12, () => {
+            this._initialRefreshId = 0;
+            this._refreshNow();
+            return false;
+        });
+    }
+
     _onMenuStateChanged(menu, open) {
         if (open && !this._refreshing) {
             this._render();
@@ -808,6 +827,11 @@ class CodexUsageApplet extends Applet.TextIconApplet {
     _refreshNow(options) {
         let refreshOptions = options || {};
         let manual = Boolean(refreshOptions.manual);
+
+        if (this._initialRefreshId !== 0) {
+            Mainloop.source_remove(this._initialRefreshId);
+            this._initialRefreshId = 0;
+        }
 
         if (this._refreshing) {
             if (manual) {
@@ -964,6 +988,8 @@ class CodexUsageApplet extends Applet.TextIconApplet {
         let secondary = rateLimit.secondary || null;
         let credits = rateLimit.credits || null;
 
+        this._primaryMeter.actor.visible = true;
+        this._secondaryMeter.actor.visible = true;
         this.set_applet_label(this._buildCombinedPanelLabel(primary, secondary, copilotPayload));
         this.set_applet_tooltip(this._buildTooltip(codexPayload, copilotPayload));
 
@@ -992,6 +1018,10 @@ class CodexUsageApplet extends Applet.TextIconApplet {
     _buildCodexPanelFragment(primary, secondary) {
         if (!this._lastCodexPayload && this._codexError) {
             return this._t("errLabel");
+        }
+
+        if (!this.showPrimaryWindow) {
+            return this._buildSingleWindowPanelLabel(secondary, "secondary");
         }
 
         return this._buildPanelLabel(
@@ -1328,6 +1358,14 @@ class CodexUsageApplet extends Applet.TextIconApplet {
             leftValue: leftValue,
             rightName: rightName,
             rightValue: rightValue
+        });
+    }
+
+    _buildSingleWindowPanelLabel(windowData, fallbackName) {
+        let value = windowData ? this._displayPercent(this._remainingPercent(windowData)) : "--";
+
+        return this._t("panelLabelSingle", {
+            value: value
         });
     }
 
@@ -1761,6 +1799,11 @@ class CodexUsageApplet extends Applet.TextIconApplet {
     }
 
     on_applet_removed_from_panel() {
+        if (this._initialRefreshId !== 0) {
+            Mainloop.source_remove(this._initialRefreshId);
+            this._initialRefreshId = 0;
+        }
+
         if (this._refreshLoopId !== 0) {
             Mainloop.source_remove(this._refreshLoopId);
             this._refreshLoopId = 0;

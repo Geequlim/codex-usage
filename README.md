@@ -73,6 +73,7 @@ Right click the applet and choose `Configure...`.
 Available settings:
 
 - Refresh interval in minutes
+- Whether to show the 5-hour Codex window as well; the default is to show only the 7-day window
 - Whether GitHub Copilot quota lookup is enabled
 
 If you enable Copilot lookup, the applet will call:

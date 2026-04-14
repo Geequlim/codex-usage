@@ -4,7 +4,7 @@
   "description": "Show Codex usage and optional GitHub Copilot quota in the Cinnamon panel",
   "author": "Geequlim",
   "website": "https://github.com/Geequlim/codex-usage",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "cinnamon-version": [
     "6.6"
   ],
