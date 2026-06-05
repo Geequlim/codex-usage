@@ -2,8 +2,8 @@ from pathlib import Path
 import os
 import pwd
 import shlex
-import shutil
 import subprocess
+import shutil
 
 
 SHELL_ENV_TIMEOUT_SECONDS = 3
@@ -76,7 +76,8 @@ def iter_env_files():
     yield home / ".config" / "codex-usage" / "env"
 
 
-def load_env_overrides_from_files():
+def load_env_overrides_from_files(extra_allowed_keys=()):
+    allowed_keys = ENV_OVERRIDE_KEYS + tuple(extra_allowed_keys or ())
     values = {}
     sources = []
 
@@ -89,7 +90,7 @@ def load_env_overrides_from_files():
         except OSError:
             continue
 
-        parsed = parse_env_assignments(lines, ENV_OVERRIDE_KEYS)
+        parsed = parse_env_assignments(lines, allowed_keys)
         if not parsed:
             continue
 
@@ -112,7 +113,7 @@ def extract_marked_block(text, start_marker, end_marker):
     return text[start_index:end_index]
 
 
-def load_env_overrides_from_shell():
+def load_env_overrides_from_shell(extra_allowed_keys=()):
     shell = os.environ.get("SHELL")
     if not shell:
         try:
@@ -132,6 +133,8 @@ def load_env_overrides_from_shell():
     probe_env = os.environ.copy()
     probe_env.setdefault("HOME", str(Path.home()))
 
+    allowed_keys = ENV_OVERRIDE_KEYS + tuple(extra_allowed_keys or ())
+
     try:
         completed = subprocess.run(
             [shell, "-ic", command],
@@ -147,7 +150,7 @@ def load_env_overrides_from_shell():
     if block is None:
         return {}, shell
 
-    return parse_env_assignments(block.splitlines(), ENV_OVERRIDE_KEYS), shell
+    return parse_env_assignments(block.splitlines(), allowed_keys), shell
 
 
 def normalize_proxy_env(env):
@@ -172,20 +175,20 @@ def has_any_proxy(env):
     return any(env.get(key) for key in PROXY_KEYS if "proxy" in key.lower() and key.lower() != "no_proxy")
 
 
-def _missing_required_commands(env, required_commands):
-    for command in required_commands:
-        if shutil.which(command, path=env.get("PATH")) is None:
-            return True
-
-    return False
+def find_command(env, command):
+    return shutil.which(command, path=env.get("PATH"))
 
 
-def build_subprocess_env(required_commands=None):
+def missing_commands(env, commands):
+    return [command for command in tuple(commands or ()) if find_command(env, command) is None]
+
+
+def build_runtime_env(extra_env_keys=None):
     env = os.environ.copy()
     sources = ["process"]
-    required_commands = tuple(required_commands or ())
+    extra_env_keys = tuple(extra_env_keys or ())
 
-    file_overrides, file_sources = load_env_overrides_from_files()
+    file_overrides, file_sources = load_env_overrides_from_files(extra_env_keys)
     if file_sources:
         sources.extend(file_sources)
 
@@ -198,17 +201,17 @@ def build_subprocess_env(required_commands=None):
             env[key] = value
 
     normalize_proxy_env(env)
-    path_missing_tools = _missing_required_commands(env, required_commands)
 
-    if path_missing_tools and file_path_override:
+    if file_path_override and not env.get("PATH"):
         env["PATH"] = file_path_override
-        path_missing_tools = _missing_required_commands(env, required_commands)
+    elif file_path_override:
+        env["PATH"] = env.get("PATH") or file_path_override
 
-    if not has_any_proxy(env) or path_missing_tools:
-        shell_overrides, shell = load_env_overrides_from_shell()
+    if not has_any_proxy(env):
+        shell_overrides, shell = load_env_overrides_from_shell(extra_env_keys)
         for key, value in shell_overrides.items():
             if key == "PATH":
-                if path_missing_tools:
+                if not env.get(key):
                     env[key] = value
             elif not env.get(key):
                 env[key] = value
@@ -221,19 +224,49 @@ def build_subprocess_env(required_commands=None):
     return env, sources
 
 
-def summarize_runtime_context(env, sources):
-    codex_path = shutil.which("codex", path=env.get("PATH"))
-    gh_path = shutil.which("gh", path=env.get("PATH"))
+def build_subprocess_env(required_commands=None, extra_env_keys=None):
+    env, sources = build_runtime_env(extra_env_keys=extra_env_keys)
+    required_commands = tuple(required_commands or ())
+    file_overrides, _ = load_env_overrides_from_files(extra_env_keys)
+    file_path_override = file_overrides.get("PATH")
+
+    missing = missing_commands(env, required_commands)
+    if missing and file_path_override:
+        env["PATH"] = file_path_override
+        missing = missing_commands(env, required_commands)
+
+    if missing:
+        shell_overrides, shell = load_env_overrides_from_shell(extra_env_keys)
+        for key, value in shell_overrides.items():
+            if key == "PATH":
+                env[key] = value
+            elif not env.get(key):
+                env[key] = value
+
+        if shell_overrides:
+            shell_name = shell or "shell"
+            marker = f"interactive:{shell_name}"
+            if marker not in sources:
+                sources.append(marker)
+
+    normalize_proxy_env(env)
+    return env, sources
+
+
+def summarize_runtime_context(env, sources, inspected_commands=None):
     proxy_bits = [
         f"HTTP_PROXY={'set' if env.get('HTTP_PROXY') else 'unset'}",
         f"HTTPS_PROXY={'set' if env.get('HTTPS_PROXY') else 'unset'}",
         f"ALL_PROXY={'set' if env.get('ALL_PROXY') else 'unset'}",
         f"NO_PROXY={'set' if env.get('NO_PROXY') else 'unset'}",
     ]
+    command_bits = []
+    for command in tuple(inspected_commands or ()):
+        command_bits.append(f"{command}={find_command(env, command) or 'missing'}")
 
-    return (
-        f"codex={codex_path or 'missing'}; "
-        f"gh={gh_path or 'missing'}; "
-        f"{', '.join(proxy_bits)}; "
-        f"env_sources={','.join(sources)}"
-    )
+    pieces = []
+    if command_bits:
+        pieces.append("; ".join(command_bits))
+    pieces.append(", ".join(proxy_bits))
+    pieces.append(f"env_sources={','.join(sources)}")
+    return "; ".join(pieces)

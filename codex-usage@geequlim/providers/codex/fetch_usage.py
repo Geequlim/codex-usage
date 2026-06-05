@@ -2,12 +2,14 @@
 
 import json
 import select
-import shutil
 import subprocess
 import sys
 import time
+from pathlib import Path
 
-from runtime_env import build_subprocess_env, summarize_runtime_context
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "bin"))
+
+from runtime_env import build_runtime_env, find_command, summarize_runtime_context
 
 
 TIMEOUT_SECONDS = 20
@@ -254,10 +256,10 @@ def is_transient_network_error(message):
 
 
 def fetch_usage_snapshot_once():
-    child_env, env_sources = build_subprocess_env(required_commands=("codex",))
-    codex_path = shutil.which("codex", path=child_env.get("PATH"))
+    child_env, env_sources = build_runtime_env()
+    codex_path = find_command(child_env, "codex")
     if codex_path is None:
-        raise RuntimeError("codex executable not found; " + summarize_runtime_context(child_env, env_sources))
+        raise RuntimeError("codex executable not found; " + summarize_runtime_context(child_env, env_sources, inspected_commands=("codex",)))
 
     process = subprocess.Popen(
         [codex_path, "app-server", "--listen", "stdio://"],
@@ -303,7 +305,7 @@ def fetch_usage_snapshot_once():
             "updated_at": int(time.time()),
         }
     except Exception as exc:
-        raise RuntimeError(f"{exc}; {summarize_runtime_context(child_env, env_sources)}") from exc
+        raise RuntimeError(f"{exc}; {summarize_runtime_context(child_env, env_sources, inspected_commands=('codex',))}") from exc
     finally:
         if process.poll() is None:
             process.terminate()

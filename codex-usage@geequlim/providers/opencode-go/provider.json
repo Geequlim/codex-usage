@@ -1,0 +1,20 @@
+{
+    "id": "opencode-go",
+    "name": "OpenCode Go",
+    "version": "1.0.0",
+    "entry": "index.js",
+    "enabledByDefault": false,
+    "order": 50,
+    "assets": {
+        "panelSymbolic": "opencode-symbolic.svg",
+        "panelLegacy": "opencode.svg",
+        "panelIndicator": "opencode-symbolic.svg"
+    },
+    "capabilities": {
+        "panel": true,
+        "tooltip": true,
+        "popup": true,
+        "actions": false,
+        "settings": false
+    }
+}

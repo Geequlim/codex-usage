@@ -1,12 +1,14 @@
 #!/usr/bin/env python3
 
 import json
-import shutil
 import subprocess
 import sys
 import time
+from pathlib import Path
 
-from runtime_env import build_subprocess_env, summarize_runtime_context
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "bin"))
+
+from runtime_env import build_runtime_env, find_command, summarize_runtime_context
 
 
 TIMEOUT_SECONDS = 20
@@ -42,10 +44,10 @@ def normalize_user(payload):
 
 
 def fetch_copilot_snapshot():
-    child_env, env_sources = build_subprocess_env(required_commands=("gh",))
-    gh_path = shutil.which("gh", path=child_env.get("PATH"))
+    child_env, env_sources = build_runtime_env()
+    gh_path = find_command(child_env, "gh")
     if gh_path is None:
-        raise RuntimeError("gh executable not found; " + summarize_runtime_context(child_env, env_sources))
+        raise RuntimeError("gh executable not found; " + summarize_runtime_context(child_env, env_sources, inspected_commands=("gh",)))
 
     command = [gh_path, "api"]
     for header in API_HEADERS:
@@ -61,16 +63,16 @@ def fetch_copilot_snapshot():
             env=child_env,
         )
     except (OSError, subprocess.SubprocessError) as exc:
-        raise RuntimeError(f"failed to run gh api: {exc}; {summarize_runtime_context(child_env, env_sources)}") from exc
+        raise RuntimeError(f"failed to run gh api: {exc}; {summarize_runtime_context(child_env, env_sources, inspected_commands=('gh',))}") from exc
 
     if completed.returncode != 0:
         message = (completed.stderr or completed.stdout or "gh api failed").strip()
-        raise RuntimeError(message + "; " + summarize_runtime_context(child_env, env_sources))
+        raise RuntimeError(message + "; " + summarize_runtime_context(child_env, env_sources, inspected_commands=("gh",)))
 
     try:
         raw_payload = json.loads(completed.stdout)
     except json.JSONDecodeError as exc:
-        raise RuntimeError(f"invalid JSON from gh api: {exc}; {summarize_runtime_context(child_env, env_sources)}") from exc
+        raise RuntimeError(f"invalid JSON from gh api: {exc}; {summarize_runtime_context(child_env, env_sources, inspected_commands=('gh',))}") from exc
 
     snapshots = {}
     for quota_id, snapshot_data in (raw_payload.get("quota_snapshots") or {}).items():

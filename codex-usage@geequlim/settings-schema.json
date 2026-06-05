@@ -7,18 +7,6 @@
         "step": 1,
         "units": "分钟 / min",
         "description": "查询频率",
-        "tooltip": "设置自动查询 Codex 和可选 Copilot 数据的时间间隔。"
-    },
-    "show-primary-window": {
-        "type": "switch",
-        "default": false,
-        "description": "显示 5 小时额度",
-        "tooltip": "开启后会同时显示 5 小时和 7 天窗口；关闭时仅显示 7 天窗口。"
-    },
-    "enable-copilot-query": {
-        "type": "switch",
-        "default": false,
-        "description": "启用 GitHub Copilot 额度查询",
-        "tooltip": "开启后会调用 gh api /copilot_internal/user。要求本机已安装 gh，并且已登录具备 Copilot user 权限的账号。"
+        "tooltip": "设置 Usage Deck 宿主触发 provider 刷新的时间间隔。"
     }
 }

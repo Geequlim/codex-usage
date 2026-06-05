@@ -4,6 +4,16 @@
     spacing: 8px;
 }
 
+.codex-provider-section {
+    spacing: 0;
+    width: 100%;
+}
+
+.codex-provider-stack {
+    width: 100%;
+    spacing: 8px;
+}
+
 .codex-menu-shell {
     padding: 0;
 }
@@ -59,6 +69,7 @@
 .codex-hero-card,
 .codex-window-card,
 .codex-footer-card {
+    width: 100%;
     padding: 10px 12px;
     border-radius: 14px;
     background-color: rgba(127, 127, 127, 0.16);
@@ -114,6 +125,10 @@
 .codex-hint-label {
     font-size: 12px;
     font-weight: 600;
+}
+
+.codex-card-reset {
+    padding-top: 2px;
 }
 
 .codex-status-badge {
@@ -190,4 +205,15 @@
 .codex-copilot-card {
     background-color: rgba(127, 127, 127, 0.16);
     border-color: rgba(127, 127, 127, 0.24);
+}
+
+.codex-inline-meter {
+    padding: 8px 0 0 0;
+    margin-top: 4px;
+    border-top: 1px solid rgba(127, 127, 127, 0.18);
+    background-color: transparent;
+    border-left: 0;
+    border-right: 0;
+    border-bottom: 0;
+    border-radius: 0;
 }

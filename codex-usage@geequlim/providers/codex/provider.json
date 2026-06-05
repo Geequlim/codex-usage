@@ -1,0 +1,19 @@
+{
+    "id": "codex",
+    "name": "Codex",
+    "version": "1.0.0",
+    "entry": "index.js",
+    "enabledByDefault": true,
+    "order": 10,
+    "assets": {
+        "panelSymbolic": "panel-symbolic.svg",
+        "panelLegacy": "panel.svg"
+    },
+    "capabilities": {
+        "panel": true,
+        "tooltip": true,
+        "popup": true,
+        "actions": false,
+        "settings": true
+    }
+}

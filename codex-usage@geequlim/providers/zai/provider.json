@@ -1,0 +1,20 @@
+{
+    "id": "zai",
+    "name": "GLM Coding Plan",
+    "version": "1.0.0",
+    "entry": "index.js",
+    "enabledByDefault": false,
+    "order": 30,
+    "assets": {
+        "panelSymbolic": "zai-symbolic.svg",
+        "panelLegacy": "zai.svg",
+        "panelIndicator": "zai-symbolic.svg"
+    },
+    "capabilities": {
+        "panel": true,
+        "tooltip": true,
+        "popup": true,
+        "actions": false,
+        "settings": false
+    }
+}

@@ -1,0 +1,18 @@
+{
+    "id": "copilot",
+    "name": "GitHub Copilot",
+    "version": "1.0.0",
+    "entry": "index.js",
+    "enabledByDefault": false,
+    "order": 20,
+    "assets": {
+        "panelIndicator": "panel-symbolic.svg"
+    },
+    "capabilities": {
+        "panel": true,
+        "tooltip": true,
+        "popup": true,
+        "actions": false,
+        "settings": true
+    }
+}

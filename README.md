@@ -1,177 +1,117 @@
-# Codex Usage for Cinnamon
+# Usage Deck for Cinnamon
 
 [简体中文](./README.zh-CN.md)
 
-A Cinnamon panel applet for monitoring the current usage state of your `codex` account, with optional GitHub Copilot quota lookup.
+`Usage Deck` is a Cinnamon panel applet for viewing usage, quota, and balance information from multiple providers in one place.
 
-It shows a compact remaining-quota summary in the panel, and opens a detailed popup when clicked.
+It can aggregate bundled providers such as `Codex`, `GitHub Copilot`, `z.ai`, `DeepSeek`, and `OpenCode Go`, and it can also load user-defined providers from your local config directory.
 
-The popup includes:
+![Usage Deck screenshot](./screenshot.png)
 
-- Remaining quota for the 5-hour and 7-day windows
-- Optional GitHub Copilot premium interactions, chat, and completions quota
-- Current account and plan
-- Last updated time
-- Reset time for each usage window
+## What It Does
 
-![Codex Usage screenshot](./screenshot.png)
-
-## Features
-
-- Reads data directly from `codex app-server` over JSON-RPC
-- Optionally reads GitHub Copilot quota via `gh api /copilot_internal/user`
-- Compact panel summary plus a detailed popup panel
-- Simplified Chinese and English, auto-detected from system locale
-- Uses bundled icon assets for both the panel and the Cinnamon applet manager
-- Configurable auto refresh interval
-- Right click to open the applet settings
-- Immediate refresh whenever the detail panel is opened
-
-## Preview
-
-- Panel summary example: `5h 95% · 7d 34%`
-- Tooltip uses a compact multi-line summary
-- Popup panel shows both quota windows, plan, update time, and status text
+- Shows provider-contributed summaries in the panel
+- Shows provider details in tooltips and popup cards
+- Lets you enable or disable providers from the applet menu
+- Refreshes provider data automatically on a schedule
+- Supports bundled providers and user-defined providers
 
 ## Requirements
 
 - Cinnamon
-- `codex` CLI installed and signed in
-- Optional: `gh` CLI installed and signed in with Copilot user access
 - `python3`
+- Provider-specific credentials or CLI tools depending on what you enable
+
+Examples:
+
+- `Codex`: requires the `codex` CLI and login
+- `GitHub Copilot`: requires the `gh` CLI and Copilot access
+- `z.ai`: requires `Z_AI_API_KEY`
+- `DeepSeek`: requires `DEEPSEEK_API_KEY`
+- `OpenCode Go`: requires `OPENCODE_GO_WORKSPACE_ID` and `OPENCODE_GO_AUTH_COOKIE`
 
 ## Install
 
-The applet directory is self-contained, so both of these work.
-
-Option 1, use the helper script:
+Option 1:
 
 ```bash
 ./install.sh
 ```
 
-Option 2, copy the applet directory directly:
+Option 2:
 
 ```bash
 mkdir -p ~/.local/share/cinnamon/applets
 cp -r codex-usage@geequlim ~/.local/share/cinnamon/applets/
-chmod +x ~/.local/share/cinnamon/applets/codex-usage@geequlim/bin/fetch_codex_usage.py
-chmod +x ~/.local/share/cinnamon/applets/codex-usage@geequlim/bin/fetch_copilot_usage.py
+chmod +x ~/.local/share/cinnamon/applets/codex-usage@geequlim/providers/*/fetch_usage.py
 ```
 
 Then reload Cinnamon:
 
-- X11: press `Alt+F2`, then type `r`
+- X11: `Alt+F2`, then `r`
 - Wayland: log out and log back in
 
-Finally, add `Codex Usage` from the Cinnamon Applets settings UI.
+Finally, add `Usage Deck` from the Cinnamon Applets settings UI.
 
-## Settings
+## Configure
 
-Right click the applet and choose `Configure...`.
+Right click the applet to:
 
-Available settings:
+- Refresh immediately
+- Enable or disable providers
 
-- Refresh interval in minutes
-- Whether to show the 5-hour Codex window as well; the default is to show only the 7-day window
-- Whether GitHub Copilot quota lookup is enabled
+The Cinnamon settings page currently exposes host-level refresh interval only.
 
-If you enable Copilot lookup, the applet will call:
+## Environment Variables
 
-```bash
-gh api \
-  -H "Accept: application/json" \
-  -H "Editor-Version: vscode/1.96.2" \
-  -H "X-Github-Api-Version: 2025-04-01" \
-  /copilot_internal/user
-```
+If your desktop session does not inherit shell variables, put them in:
 
-The `gh` environment must already be authenticated for a user that has Copilot quota access.
+- `~/.config/environment.d/*.conf`
+- or `~/.config/codex-usage/env`
 
-## How It Works
-
-`codex-usage@geequlim/bin/fetch_codex_usage.py` does the following:
-
-1. Starts `codex app-server --listen stdio://`
-2. Sends `initialize`
-3. Sends `initialized`
-4. Calls `account/read`
-5. Calls `account/rateLimits/read`
-6. Normalizes the response into a simpler JSON payload for the applet
-
-`codex-usage@geequlim/bin/fetch_copilot_usage.py` is implemented separately and:
-
-1. Calls `gh api /copilot_internal/user`
-2. Normalizes the Copilot quota snapshots into a simpler JSON payload for the applet
-
-The Cinnamon applet then renders that data into the panel label, tooltip, and popup detail view.
-
-When the helper starts `codex`, it resolves environment variables in this order:
-
-1. The current Cinnamon / applet process environment
-2. `/etc/environment`
-3. `~/.pam_environment`
-4. `~/.config/environment.d/*.conf`
-5. `~/.config/codex-usage/env`
-6. If proxy variables are still missing, or `codex` is not on `PATH`, it probes the user's interactive shell as a fallback
-
-This matters because many desktop sessions do not inherit proxy variables that only exist in `~/.zshrc` or `~/.bashrc`.
-
-## Project Structure
-
-```text
-codex-usage@geequlim/
-  applet.js
-  codex-color.png
-  codex-symbolic.svg
-  codex.svg
-  icon.png
-  metadata.json
-  settings-schema.json
-  stylesheet.css
-  bin/
-    runtime_env.py
-    fetch_codex_usage.py
-    fetch_copilot_usage.py
-
-install.sh
-screenshot.png
-```
-
-## Known Limitations
-
-- Data depends on `codex` / ChatGPT backend availability
-- Cinnamon usually needs to be reloaded after applet code changes
-- GitHub Copilot quota lookup depends on `gh` CLI authentication and GitHub-side access
-
-## Proxy Troubleshooting
-
-If the tooltip shows `Timed out waiting for Codex app-server response`, look at the diagnostic suffix in the error:
-
-- `codex=...` shows the executable path the helper actually found
-- `HTTP_PROXY/HTTPS_PROXY/ALL_PROXY` show `set` or `unset`
-- `env_sources=...` shows whether values came from the current Cinnamon environment, env files, or the interactive shell fallback
-
-If your desktop session is not exporting proxy variables, the most reliable fix is to define them in `~/.config/environment.d/proxy.conf` or `~/.config/codex-usage/env`, for example:
+Common examples:
 
 ```ini
+Z_AI_API_KEY=your-zai-key
+DEEPSEEK_API_KEY=your-deepseek-key
+OPENCODE_GO_WORKSPACE_ID=your-workspace-id
+OPENCODE_GO_AUTH_COOKIE=your-cookie
 HTTP_PROXY=http://127.0.0.1:1080
 HTTPS_PROXY=http://127.0.0.1:1080
 ALL_PROXY=socks5://127.0.0.1:1080
 ```
 
-## Packaging
+## User Providers
 
-`codex-usage@geequlim/` is intentionally self-contained.
+Built-in providers live in:
 
-That means:
+- `codex-usage@geequlim/providers/`
 
-- You can copy just that directory into `~/.local/share/cinnamon/applets/`
-- The Cinnamon applet manager can use the bundled `icon.png`
-- The panel applet can use the bundled SVG assets without relying on repository-level files
+User-defined providers can be added here:
 
-This layout is also friendlier if you later prepare the applet for Cinnamon Spices submission.
+- `~/.config/usage-deck/providers/`
 
-## License
+If a user provider uses the same `id` as a bundled provider, the user provider overrides the bundled one.
 
-If you are publishing this project, add a `LICENSE` file to the repository.
+## Project Layout
+
+```text
+codex-usage@geequlim/
+  applet.js
+  icon.png
+  stylesheet.css
+  metadata.json
+  settings-schema.json
+  bin/
+    runtime_env.py
+  lib/
+    ...
+  providers/
+    ...
+```
+
+## Notes
+
+- Provider data depends on external services being available
+- After code changes, Cinnamon usually needs to be reloaded
+- User-defined providers run local code and should be treated as trusted
