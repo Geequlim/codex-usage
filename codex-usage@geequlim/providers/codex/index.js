@@ -142,6 +142,28 @@ function buildWindowState(windowData, fallbackName, t) {
     };
 }
 
+function getAvailableWindows(rateLimit) {
+    let windows = [];
+
+    if (rateLimit.primary) {
+        windows.push({
+            data: rateLimit.primary,
+            fallbackName: "primary",
+            accent: PRIMARY_ACCENT
+        });
+    }
+
+    if (rateLimit.secondary) {
+        windows.push({
+            data: rateLimit.secondary,
+            fallbackName: "secondary",
+            accent: SECONDARY_ACCENT
+        });
+    }
+
+    return windows;
+}
+
 function buildSummaryCard(data, runtime, t) {
     let rateLimit = data ? data.rate_limit || {} : {};
     let credits = rateLimit.credits || null;
@@ -204,25 +226,30 @@ module.exports = {
                 }
 
                 let rateLimit = data.rate_limit || {};
-                let primary = rateLimit.primary || null;
-                let secondary = rateLimit.secondary || null;
+                let windows = getAvailableWindows(rateLimit);
                 let items = [];
                 let showPrimary = runtime.settings.get("showPrimaryWindow", false);
 
-                if (showPrimary) {
+                if (showPrimary && windows.length > 0) {
+                    windows.forEach((window, index) => {
+                        if (index > 0) {
+                            items.push({ type: "separator", text: "·", priority: index * 20 });
+                        }
+
+                        items.push({
+                            type: "text",
+                            text: shortWindowName(window.data.window_duration_mins, window.fallbackName, t) + " " + displayPercent(remainingPercent(window.data)),
+                            priority: 10 + index * 20
+                        });
+                    });
+                } else {
+                    let summaryWindow = rateLimit.secondary || rateLimit.primary || null;
                     items.push({
                         type: "text",
-                        text: shortWindowName(primary ? primary.window_duration_mins : 300, "primary", t) + " " + displayPercent(remainingPercent(primary)),
+                        text: displayPercent(remainingPercent(summaryWindow)),
                         priority: 10
                     });
-                    items.push({ type: "separator", text: "·", priority: 20 });
                 }
-
-                items.push({
-                    type: "text",
-                    text: displayPercent(remainingPercent(secondary)),
-                    priority: 30
-                });
 
                 return items;
             },
@@ -242,8 +269,14 @@ module.exports = {
                 let lines = [
                     t("updatedTitle") + " " + Formatters.formatUpdatedTime(data.updated_at, t),
                 ];
-                lines.push(formatWindowTooltipLine(rateLimit.primary || null, "primary", t));
-                lines.push(formatWindowTooltipLine(rateLimit.secondary || null, "secondary", t));
+                let windows = getAvailableWindows(rateLimit);
+                if (windows.length === 0) {
+                    lines.push(t("usageDataUnavailable"));
+                } else {
+                    windows.forEach(window => {
+                        lines.push(formatWindowTooltipLine(window.data, window.fallbackName, t));
+                    });
+                }
                 let creditsLine = formatCreditsLine(rateLimit.credits || null, t);
                 if (creditsLine !== null) {
                     lines.push(creditsLine);
@@ -268,17 +301,18 @@ module.exports = {
                 let card = buildSummaryCard(data, runtime, t);
 
                 let rateLimit = data.rate_limit || {};
-                let primaryMeter = new UsageMeter(windowName((rateLimit.primary || {}).window_duration_mins, "primary", t), PRIMARY_ACCENT);
-                primaryMeter.setState(buildWindowState(rateLimit.primary || null, "primary", t));
-                primaryMeter.actor.remove_style_class_name("codex-window-card");
-                primaryMeter.actor.add_style_class_name("codex-inline-meter");
-                card.add_actor(primaryMeter.actor);
-
-                let secondaryMeter = new UsageMeter(windowName((rateLimit.secondary || {}).window_duration_mins, "secondary", t), SECONDARY_ACCENT);
-                secondaryMeter.setState(buildWindowState(rateLimit.secondary || null, "secondary", t));
-                secondaryMeter.actor.remove_style_class_name("codex-window-card");
-                secondaryMeter.actor.add_style_class_name("codex-inline-meter");
-                card.add_actor(secondaryMeter.actor);
+                let windows = getAvailableWindows(rateLimit);
+                if (windows.length === 0) {
+                    card.add_actor(applySecondaryTextStyle(createWrappedLabel(t("usageDataUnavailable"), "codex-card-detail")));
+                } else {
+                    windows.forEach(window => {
+                        let meter = new UsageMeter(windowName(window.data.window_duration_mins, window.fallbackName, t), window.accent);
+                        meter.setState(buildWindowState(window.data, window.fallbackName, t));
+                        meter.actor.remove_style_class_name("codex-window-card");
+                        meter.actor.add_style_class_name("codex-inline-meter");
+                        card.add_actor(meter.actor);
+                    });
+                }
 
                 container.add_actor(card);
             },
