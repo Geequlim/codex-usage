@@ -172,7 +172,10 @@ module.exports = {
             },
 
             renderPopup(container, state) {
-                let card = new SummaryCard(t("copilotTitle"));
+                let card = new SummaryCard(
+                    t("copilotTitle"),
+                    runtime.assets.resolve("panelIndicator")
+                );
                 let data = currentData(state);
 
                 if (!data) {

@@ -8,7 +8,7 @@
     "assets": {
         "panelSymbolic": "zai-symbolic.svg",
         "panelLegacy": "zai.svg",
-        "panelIndicator": "zai-symbolic.svg"
+        "panelIndicator": "v4/zai-symbolic.svg"
     },
     "capabilities": {
         "panel": true,

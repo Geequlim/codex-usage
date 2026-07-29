@@ -15,4 +15,16 @@ chmod +x "$TARGET_DIR/providers/codex/fetch_usage.py"
 chmod +x "$TARGET_DIR/providers/copilot/fetch_usage.py"
 
 printf 'Installed to %s\n' "$TARGET_DIR"
-printf 'Reload Cinnamon before adding the applet again (X11: Alt+F2 then r, Wayland: log out and back in).\n'
+
+if command -v gdbus >/dev/null 2>&1 &&
+    gdbus call \
+        --session \
+        --dest org.Cinnamon \
+        --object-path /org/Cinnamon \
+        --method org.Cinnamon.ReloadXlet \
+        "$TARGET_UUID" \
+        APPLET >/dev/null 2>&1; then
+    printf 'Reloaded Cinnamon applet %s\n' "$TARGET_UUID"
+else
+    printf 'Warning: installed successfully, but automatic applet reload was unavailable.\n' >&2
+fi

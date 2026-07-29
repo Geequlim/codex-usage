@@ -38,6 +38,8 @@ Option 1:
 ./install.sh
 ```
 
+The install script reloads the applet automatically through Cinnamon D-Bus.
+
 Option 2:
 
 ```bash
@@ -46,7 +48,7 @@ cp -r codex-usage@geequlim ~/.local/share/cinnamon/applets/
 chmod +x ~/.local/share/cinnamon/applets/codex-usage@geequlim/providers/*/fetch_usage.py
 ```
 
-Then reload Cinnamon:
+When using option 2, reload Cinnamon manually:
 
 - X11: `Alt+F2`, then `r`
 - Wayland: log out and log back in
@@ -113,5 +115,5 @@ codex-usage@geequlim/
 ## Notes
 
 - Provider data depends on external services being available
-- After code changes, Cinnamon usually needs to be reloaded
+- `install.sh` reloads the applet automatically; manual source changes still require a reload
 - User-defined providers run local code and should be treated as trusted

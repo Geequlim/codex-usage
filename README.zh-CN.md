@@ -38,6 +38,8 @@
 ./install.sh
 ```
 
+安装脚本会通过 Cinnamon D-Bus 自动重载 applet。
+
 方式 2：
 
 ```bash
@@ -46,7 +48,7 @@ cp -r codex-usage@geequlim ~/.local/share/cinnamon/applets/
 chmod +x ~/.local/share/cinnamon/applets/codex-usage@geequlim/providers/*/fetch_usage.py
 ```
 
-然后重载 Cinnamon：
+使用方式 2 时，需要手动重载 Cinnamon：
 
 - X11：`Alt+F2`，输入 `r`
 - Wayland：注销并重新登录
@@ -113,5 +115,5 @@ codex-usage@geequlim/
 ## 说明
 
 - provider 数据依赖外部服务是否可用
-- 修改代码后通常需要重载 Cinnamon
+- `install.sh` 会自动重载 applet；直接修改源码后仍需重载
 - 用户自定义 provider 会执行本地代码，应视为受信任代码

@@ -8,7 +8,7 @@
     "assets": {
         "panelSymbolic": "deepseek-symbolic.svg",
         "panelLegacy": "deepseek.svg",
-        "panelIndicator": "deepseek-symbolic.svg"
+        "panelIndicator": "v5/deepseek-symbolic.svg"
     },
     "capabilities": {
         "panel": true,

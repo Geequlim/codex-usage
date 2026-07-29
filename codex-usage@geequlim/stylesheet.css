@@ -33,6 +33,7 @@
     padding-right: 2px;
     padding-top: 0;
     padding-bottom: 0;
+    spacing: 6px;
     color: inherit;
 }
 
@@ -64,6 +65,20 @@
 
 .codex-card-header-copy {
     spacing: 1px;
+}
+
+.codex-provider-title {
+    spacing: 8px;
+}
+
+.codex-provider-title-icon-bin {
+    min-width: 20px;
+    min-height: 20px;
+}
+
+.codex-provider-title-icon {
+    icon-size: 18px;
+    color: inherit;
 }
 
 .codex-hero-card,

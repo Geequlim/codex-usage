@@ -8,7 +8,7 @@
     "assets": {
         "panelSymbolic": "opencode-symbolic.svg",
         "panelLegacy": "opencode.svg",
-        "panelIndicator": "opencode-symbolic.svg"
+        "panelIndicator": "v4/opencode-symbolic.svg"
     },
     "capabilities": {
         "panel": true,

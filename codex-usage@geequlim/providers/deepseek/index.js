@@ -3,6 +3,7 @@ const St = imports.gi.St;
 const {
     createWrappedLabel,
     applySecondaryTextStyle,
+    createProviderTitle,
 } = require("./lib/ui");
 const Formatters = require("./lib/shared/formatters");
 const { createTranslator } = require("./providers/deepseek/strings");
@@ -41,7 +42,7 @@ function formatMoney(value) {
     return numeric.toFixed(2);
 }
 
-function buildSummaryCard(data, t) {
+function buildSummaryCard(data, runtime, t) {
     let card = new St.BoxLayout({
         vertical: true,
         style_class: "codex-hero-card",
@@ -53,11 +54,11 @@ function buildSummaryCard(data, t) {
         style_class: "codex-hero-header",
         x_expand: true
     });
-    header.add_actor(new St.Label({
-        text: t("title"),
-        style_class: "codex-hero-title",
-        x_expand: true
-    }));
+    header.add_actor(createProviderTitle(
+        runtime.assets.resolve("panelIndicator"),
+        t("title"),
+        "codex-hero-title"
+    ).actor);
     header.add_actor(new St.Label({
         text: data && data.is_available ? t("available") : t("unavailable"),
         style_class: "codex-status-badge codex-status-muted"
@@ -178,7 +179,7 @@ module.exports = {
                     return;
                 }
 
-                container.add_actor(buildSummaryCard(data, t));
+                container.add_actor(buildSummaryCard(data, runtime, t));
             },
 
             getActions() {

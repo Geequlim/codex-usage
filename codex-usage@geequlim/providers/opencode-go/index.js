@@ -2,10 +2,11 @@ const St = imports.gi.St;
 
 const PRIMARY_ACCENT = { red: 16, green: 185, blue: 129 };
 const SECONDARY_ACCENT = { red: 59, green: 130, blue: 246 };
-const SUMMARY_ACCENT = { red: 245, green: 158, blue: 11 };
+const SUMMARY_ACCENT = { red: 168, green: 85, blue: 247 };
 const {
     createWrappedLabel,
     applySecondaryTextStyle,
+    createProviderTitle,
     UsageMeter,
 } = require("./lib/ui");
 const Formatters = require("./lib/shared/formatters");
@@ -21,6 +22,23 @@ function displayPercent(value) {
     }
 
     return String(Math.round(value)) + "%";
+}
+
+function remainingPercent(windowData) {
+    return windowData && typeof windowData.percent_remaining === "number"
+        ? windowData.percent_remaining
+        : null;
+}
+
+function minRemainingPercent(firstWindow, secondWindow) {
+    let first = remainingPercent(firstWindow);
+    let second = remainingPercent(secondWindow);
+
+    if (first !== null && second !== null) {
+        return Math.min(first, second);
+    }
+
+    return first !== null ? first : second;
 }
 
 function shortWindowName(kind, t) {
@@ -77,11 +95,11 @@ function buildSummaryCard(runtime, t) {
         style_class: "codex-hero-header",
         x_expand: true
     });
-    header.add_actor(new St.Label({
-        text: t("title"),
-        style_class: "codex-hero-title",
-        x_expand: true
-    }));
+    header.add_actor(createProviderTitle(
+        runtime.assets.resolve("panelIndicator"),
+        t("title"),
+        "codex-hero-title"
+    ).actor);
     card.add_actor(header);
 
     return card;
@@ -115,10 +133,11 @@ module.exports = {
                     iconPath: runtime.assets.resolve("panelIndicator"),
                     priority: 85
                 }];
-                if (data.weekly) {
+                let weeklyMonthlyRemaining = minRemainingPercent(data.weekly, data.monthly);
+                if (weeklyMonthlyRemaining !== null) {
                     items.push({
                         type: "text",
-                        text: displayPercent(data.weekly.percent_remaining),
+                        text: displayPercent(weeklyMonthlyRemaining),
                         priority: 90
                     });
                     return items;

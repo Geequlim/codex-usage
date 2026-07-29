@@ -1,15 +1,12 @@
 const PopupMenu = imports.ui.popupMenu;
 const St = imports.gi.St;
 
-const { createWrappedLabel, applySecondaryTextStyle } = require("./lib/ui");
-
-function PopupHost(applet, translate) {
-    this._init(applet, translate);
+function PopupHost(applet) {
+    this._init(applet);
 }
 
 PopupHost.prototype = {
-    _init: function(applet, translate) {
-        this._t = translate;
+    _init: function(applet) {
         this._applet = applet;
 
         let shellItem = new PopupMenu.PopupBaseMenuItem({
@@ -29,48 +26,12 @@ PopupHost.prototype = {
         shellItem.addActor(this.root, { span: -1, expand: true });
         applet.menu.addMenuItem(shellItem);
 
-        let heroCard = new St.BoxLayout({
-            vertical: true,
-            style_class: "codex-hero-card",
-            x_expand: true
-        });
-        let heroHeader = new St.BoxLayout({
-            style_class: "codex-hero-header",
-            x_expand: true
-        });
-        this._titleLabel = new St.Label({
-            text: this._t("appTitle"),
-            style_class: "codex-hero-title",
-            x_expand: true
-        });
-        this._statusBadge = new St.Label({
-            text: this._t("loading"),
-            style_class: "codex-status-badge codex-status-loading"
-        });
-        heroHeader.add_actor(this._titleLabel);
-        heroHeader.add_actor(this._statusBadge);
-        heroCard.add_actor(heroHeader);
-
-        this._contextLabel = applySecondaryTextStyle(createWrappedLabel("", "codex-context-label"));
-        heroCard.add_actor(this._contextLabel);
-        this.root.add_actor(heroCard);
-
         this.providersBox = new St.BoxLayout({
             vertical: true,
             style_class: "codex-provider-stack",
             x_expand: true
         });
         this.root.add_actor(this.providersBox);
-    },
-
-    setStatus: function(state, badgeText, statusText, contextText, hintText) {
-        this._statusBadge.set_text(badgeText);
-        this._statusBadge.remove_style_class_name("codex-status-live");
-        this._statusBadge.remove_style_class_name("codex-status-loading");
-        this._statusBadge.remove_style_class_name("codex-status-error");
-        this._statusBadge.remove_style_class_name("codex-status-muted");
-        this._statusBadge.add_style_class_name("codex-status-" + state);
-        this._contextLabel.set_text(contextText || "");
     },
 
     renderProviderSections: function(entries, stateStore, renderProvider) {

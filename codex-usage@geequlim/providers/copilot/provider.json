@@ -6,7 +6,7 @@
     "enabledByDefault": false,
     "order": 20,
     "assets": {
-        "panelIndicator": "panel-symbolic.svg"
+        "panelIndicator": "v4/panel-symbolic.svg"
     },
     "capabilities": {
         "panel": true,

@@ -5,6 +5,7 @@ const SECONDARY_ACCENT = { red: 59, green: 130, blue: 246 };
 const {
     createWrappedLabel,
     applySecondaryTextStyle,
+    createProviderTitle,
     UsageMeter,
 } = require("./lib/ui");
 const Formatters = require("./lib/shared/formatters");
@@ -179,11 +180,11 @@ function buildSummaryCard(data, runtime, t) {
         style_class: "codex-hero-header",
         x_expand: true
     });
-    header.add_actor(new St.Label({
-        text: runtime.descriptor.name,
-        style_class: "codex-hero-title",
-        x_expand: true
-    }));
+    header.add_actor(createProviderTitle(
+        runtime.assets.resolve("panelIndicator"),
+        runtime.descriptor.name,
+        "codex-hero-title"
+    ).actor);
     header.add_actor(new St.Label({
         text: planName,
         style_class: "codex-status-badge codex-status-muted"
@@ -217,17 +218,22 @@ module.exports = {
 
             getPanelContributions(state) {
                 let data = currentData(state);
+                let items = [{
+                    type: "icon",
+                    iconPath: runtime.assets.resolve("panelIndicator"),
+                    priority: 0
+                }];
                 if (!data) {
-                    return [{
+                    items.push({
                         type: "text",
                         text: state.error ? t("errLabel") : "--",
                         priority: 10
-                    }];
+                    });
+                    return items;
                 }
 
                 let rateLimit = data.rate_limit || {};
                 let windows = getAvailableWindows(rateLimit);
-                let items = [];
                 let showPrimary = runtime.settings.get("showPrimaryWindow", false);
 
                 if (showPrimary && windows.length > 0) {

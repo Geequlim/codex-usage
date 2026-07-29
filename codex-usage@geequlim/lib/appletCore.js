@@ -8,6 +8,9 @@ const {
     DEFAULT_REFRESH_INTERVAL_MINUTES,
     MIN_REFRESH_INTERVAL_MINUTES,
     MAX_REFRESH_INTERVAL_MINUTES,
+    DEFAULT_INITIAL_REFRESH_DELAY_SECONDS,
+    MIN_INITIAL_REFRESH_DELAY_SECONDS,
+    MAX_INITIAL_REFRESH_DELAY_SECONDS,
     PROVIDERS_DIRECTORY_NAME,
 } = require("./lib/constants");
 const {
@@ -39,9 +42,11 @@ class UsageDeckApplet extends Applet.TextIconApplet {
         this._settingsStore = new SettingsStore("usage-deck");
         this._stateStore = new StateStore();
         this.refreshIntervalMinutes = DEFAULT_REFRESH_INTERVAL_MINUTES;
+        this.initialRefreshDelaySeconds = DEFAULT_INITIAL_REFRESH_DELAY_SECONDS;
 
         this.settings = new Settings.AppletSettings(this, metadata.uuid, instanceId);
         this.settings.bind("refresh-interval-minutes", "refreshIntervalMinutes", this._onSettingsChanged.bind(this));
+        this.settings.bind("initial-refresh-delay-seconds", "initialRefreshDelaySeconds", this._onInitialRefreshDelayChanged.bind(this));
 
         this._providerDescriptors = loadProviders([
             { path: this._providersRootPath, source: "bundled" },
@@ -73,7 +78,7 @@ class UsageDeckApplet extends Applet.TextIconApplet {
 
         this._panelHost = new PanelHost(this);
         this.menu.actor.add_style_class_name("codex-usage-menu");
-        this._popupHost = new PopupHost(this, this._t.bind(this));
+        this._popupHost = new PopupHost(this);
 
         this._buildContextMenu();
         this._applySettings();
@@ -101,14 +106,32 @@ class UsageDeckApplet extends Applet.TextIconApplet {
         return Math.max(MIN_REFRESH_INTERVAL_MINUTES, Math.min(MAX_REFRESH_INTERVAL_MINUTES, numeric));
     }
 
+    _sanitizeInitialRefreshDelay(value) {
+        let numeric = parseInt(value, 10);
+        if (isNaN(numeric)) {
+            return DEFAULT_INITIAL_REFRESH_DELAY_SECONDS;
+        }
+
+        return Math.max(MIN_INITIAL_REFRESH_DELAY_SECONDS, Math.min(MAX_INITIAL_REFRESH_DELAY_SECONDS, numeric));
+    }
+
     _onSettingsChanged() {
         this._applySettings();
         this._render();
         this._refreshNow();
     }
 
+    _onInitialRefreshDelayChanged() {
+        this.initialRefreshDelaySeconds = this._sanitizeInitialRefreshDelay(this.initialRefreshDelaySeconds);
+
+        if (this._initialRefreshId !== 0) {
+            this._scheduleInitialRefresh();
+        }
+    }
+
     _applySettings() {
         this.refreshIntervalMinutes = this._sanitizeRefreshInterval(this.refreshIntervalMinutes);
+        this.initialRefreshDelaySeconds = this._sanitizeInitialRefreshDelay(this.initialRefreshDelaySeconds);
         this._restartRefreshLoop();
     }
 
@@ -128,7 +151,7 @@ class UsageDeckApplet extends Applet.TextIconApplet {
             Mainloop.source_remove(this._initialRefreshId);
         }
 
-        this._initialRefreshId = Mainloop.timeout_add_seconds(12, () => {
+        this._initialRefreshId = Mainloop.timeout_add_seconds(this.initialRefreshDelaySeconds, () => {
             this._initialRefreshId = 0;
             this._refreshNow();
             return false;
@@ -298,17 +321,7 @@ class UsageDeckApplet extends Applet.TextIconApplet {
     }
 
     _setAppletIcon() {
-        let provider = this._enabledEntries().map(entry => entry.descriptor)[0] || this._providerDescriptors[0] || null;
-        if (provider && provider.assetPaths.panelSymbolic) {
-            this.set_applet_icon_symbolic_path(provider.assetPaths.panelSymbolic);
-            return;
-        }
-        if (provider && provider.assetPaths.panelLegacy) {
-            this.set_applet_icon_symbolic_path(provider.assetPaths.panelLegacy);
-            return;
-        }
-
-        this.set_applet_icon_symbolic_name("utilities-terminal-symbolic");
+        this.hide_applet_icon();
     }
 
     _buildTooltip() {
@@ -358,72 +371,7 @@ class UsageDeckApplet extends Applet.TextIconApplet {
         return contributions;
     }
 
-    _buildPopupStatus() {
-        let enabledEntries = this._enabledEntries();
-        let enabledIds = enabledEntries.map(entry => entry.descriptor.id);
-        let states = enabledIds.map(providerId => this._stateStore.get(providerId)).filter(Boolean);
-        let errorStates = states.filter(state => state.phase === "error");
-        let latestUpdatedAt = this._stateStore.latestUpdatedAt(enabledIds);
-        let contextText = this._t("autoRefreshEvery", { value: this.refreshIntervalMinutes });
-
-        if (this._refreshing) {
-            return {
-                badgeState: "loading",
-                badgeText: this._t("syncing"),
-                statusText: this._t("refreshingStatus"),
-                contextText: contextText,
-                hintText: this._t("clickRefreshHint"),
-            };
-        }
-
-        if (enabledEntries.length === 0) {
-            return {
-                badgeState: "muted",
-                badgeText: this._t("disabledShort"),
-                statusText: this._t("noProvidersEnabled"),
-                contextText: contextText,
-                hintText: this._t("openPanelHint"),
-            };
-        }
-
-        if (errorStates.length > 0 && latestUpdatedAt === null) {
-            return {
-                badgeState: "error",
-                badgeText: this._t("error"),
-                statusText: errorStates.map(state => state.id + ": " + Formatters.singleLine(state.error)).join(" | "),
-                contextText: contextText,
-                hintText: this._t("lastSnapshotHint"),
-            };
-        }
-
-        if (latestUpdatedAt !== null) {
-            return {
-                badgeState: "muted",
-                badgeText: Formatters.formatUpdatedTime(latestUpdatedAt, this._t.bind(this)),
-                statusText: enabledEntries.length + " provider" + (enabledEntries.length === 1 ? "" : "s") + " active",
-                contextText: contextText,
-                hintText: this._t("openPanelHint"),
-            };
-        }
-
-        return {
-            badgeState: "loading",
-            badgeText: this._t("loading"),
-            statusText: this._t("waitingFirstSuccessful"),
-            contextText: contextText,
-            hintText: this._t("openPanelHint"),
-        };
-    }
-
     _renderPopup() {
-        let status = this._buildPopupStatus();
-        this._popupHost.setStatus(
-            status.badgeState,
-            status.badgeText,
-            status.statusText,
-            status.contextText,
-            status.hintText
-        );
         this._popupHost.renderProviderSections(this._providerEntries, this._stateStore, (entry, section, state) => {
             if (entry.plugin.renderPopup) {
                 entry.plugin.renderPopup(section, state, entry.context);

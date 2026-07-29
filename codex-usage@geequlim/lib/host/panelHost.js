@@ -1,6 +1,8 @@
 const Gio = imports.gi.Gio;
 const St = imports.gi.St;
 
+const PANEL_ICON_SIZE = 20;
+
 function PanelHost(applet) {
     this._init(applet);
 }
@@ -64,11 +66,15 @@ PanelHost.prototype = {
                 let icon = new St.Icon({
                     gicon: new Gio.FileIcon({ file: Gio.file_new_for_path(item.iconPath) }),
                     icon_type: St.IconType.SYMBOLIC,
-                    icon_size: item.iconSize || 18,
+                    icon_size: PANEL_ICON_SIZE,
                     style_class: "system-status-icon codex-panel-copilot-icon",
                     y_expand: true,
                     y_align: St.Align.MIDDLE,
                 });
+                if (item.providerId === "deepseek") {
+                    icon.set_pivot_point(0.5, 0.5);
+                    icon.set_scale(1.1, 1.1);
+                }
                 this._box.add_actor(icon);
             }
         });

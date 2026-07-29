@@ -1,7 +1,10 @@
+const Gio = imports.gi.Gio;
 const Pango = imports.gi.Pango;
 const St = imports.gi.St;
 
 const SUMMARY_ACCENT = { red: 168, green: 85, blue: 247 };
+const WARNING_ACCENT = { red: 246, green: 211, blue: 45 };
+const DANGER_ACCENT = { red: 224, green: 27, blue: 36 };
 
 function drawRoundedRect(cr, x, y, width, height, radius) {
     let safeRadius = Math.max(0, Math.min(radius, Math.floor(Math.min(width, height) / 2)));
@@ -18,6 +21,17 @@ function setSourceColor(cr, color, alpha) {
     cr.setSourceRGBA(color.red / 255, color.green / 255, color.blue / 255, alpha);
 }
 
+function progressFillColor(fraction, accentColor) {
+    if (fraction > 0.5) {
+        return accentColor;
+    }
+    if (fraction >= 0.2) {
+        return WARNING_ACCENT;
+    }
+
+    return DANGER_ACCENT;
+}
+
 function createWrappedLabel(text, styleClass) {
     let label = new St.Label({
         text: text,
@@ -32,6 +46,42 @@ function applySecondaryTextStyle(label) {
     label.add_style_class_name("popup-inactive-menu-item");
     label.add_style_pseudo_class("insensitive");
     return label;
+}
+
+function createProviderTitle(iconPath, title, labelStyleClass) {
+    let actor = new St.BoxLayout({
+        style_class: "codex-provider-title",
+        x_expand: true,
+        y_align: St.Align.MIDDLE
+    });
+
+    if (iconPath) {
+        let icon = new St.Icon({
+            gicon: new Gio.FileIcon({ file: Gio.file_new_for_path(iconPath) }),
+            icon_type: St.IconType.SYMBOLIC,
+            icon_size: 18,
+            style_class: "codex-provider-title-icon",
+            y_align: St.Align.MIDDLE
+        });
+        let iconBin = new St.Bin({
+            style_class: "codex-provider-title-icon-bin",
+            y_align: St.Align.MIDDLE
+        });
+        iconBin.set_fill(false, false);
+        iconBin.set_alignment(St.Align.MIDDLE, St.Align.MIDDLE);
+        iconBin.set_child(icon);
+        actor.add_actor(iconBin);
+    }
+
+    let label = new St.Label({
+        text: title,
+        style_class: labelStyleClass,
+        x_expand: true,
+        y_align: St.Align.MIDDLE
+    });
+    actor.add_actor(label);
+
+    return { actor, label };
 }
 
 function UsageMeter(title, accentColor) {
@@ -119,7 +169,7 @@ UsageMeter.prototype = {
         if (this._fraction > 0) {
             let fillWidth = Math.max(radius * 2, Math.round(width * this._fraction));
             drawRoundedRect(cr, 0, 0, fillWidth, height, radius);
-            setSourceColor(cr, this._accentColor, this._hasData ? 0.95 : 0.4);
+            setSourceColor(cr, progressFillColor(this._fraction, this._accentColor), this._hasData ? 0.95 : 0.4);
             cr.fill();
         }
 
@@ -127,12 +177,12 @@ UsageMeter.prototype = {
     }
 };
 
-function SummaryCard(title) {
-    this._init(title);
+function SummaryCard(title, iconPath) {
+    this._init(title, iconPath);
 }
 
 SummaryCard.prototype = {
-    _init: function(title) {
+    _init: function(title, iconPath) {
         this._accentColor = SUMMARY_ACCENT;
         this._fraction = 0;
         this._hasData = false;
@@ -154,18 +204,19 @@ SummaryCard.prototype = {
             x_expand: true
         });
 
-        this._titleLabel = new St.Label({
-            text: title,
-            style_class: "codex-hero-title codex-copilot-title",
-            x_expand: true
-        });
+        let providerTitle = createProviderTitle(
+            iconPath,
+            title,
+            "codex-hero-title codex-copilot-title"
+        );
+        this._titleLabel = providerTitle.label;
         this._valueLabel = new St.Label({
             text: "--",
             style_class: "codex-summary-value"
         });
 
         this._subtitleLabel = applySecondaryTextStyle(createWrappedLabel("", "codex-card-subtitle"));
-        headerTextBox.add_actor(this._titleLabel);
+        headerTextBox.add_actor(providerTitle.actor);
         headerTextBox.add_actor(this._subtitleLabel);
         header.add_actor(headerTextBox);
         header.add_actor(this._valueLabel);
@@ -239,7 +290,7 @@ SummaryCard.prototype = {
         if (this._fraction > 0) {
             let fillWidth = Math.max(radius * 2, Math.round(width * this._fraction));
             drawRoundedRect(cr, 0, 0, fillWidth, height, radius);
-            setSourceColor(cr, this._accentColor, this._hasData ? 0.95 : 0.4);
+            setSourceColor(cr, progressFillColor(this._fraction, this._accentColor), this._hasData ? 0.95 : 0.4);
             cr.fill();
         }
 
@@ -250,6 +301,7 @@ SummaryCard.prototype = {
 module.exports = {
     createWrappedLabel,
     applySecondaryTextStyle,
+    createProviderTitle,
     UsageMeter,
     SummaryCard,
 };

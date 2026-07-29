@@ -2,7 +2,7 @@ const DICTIONARIES = {
     en: {
         errLabel: "ERR",
         refreshFailed: "Refresh failed: {error}",
-        copilotTitle: "GitHub Copilot Usage",
+        copilotTitle: "GitHub Copilot",
         copilotWaiting: "Waiting for Copilot data",
         copilotUnavailable: "Unavailable",
         quotaUnlimitedShort: "∞",
@@ -26,7 +26,7 @@ const DICTIONARIES = {
     zh: {
         errLabel: "错误",
         refreshFailed: "刷新失败：{error}",
-        copilotTitle: "Github Copilot 用量",
+        copilotTitle: "Github Copilot",
         copilotWaiting: "等待 Copilot 数据",
         copilotUnavailable: "不可用",
         quotaUnlimitedShort: "∞",

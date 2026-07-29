@@ -8,5 +8,15 @@
         "units": "分钟 / min",
         "description": "查询频率",
         "tooltip": "设置 Usage Deck 宿主触发 provider 刷新的时间间隔。"
+    },
+    "initial-refresh-delay-seconds": {
+        "type": "spinbutton",
+        "default": 5,
+        "min": 1,
+        "max": 300,
+        "step": 1,
+        "units": "秒 / sec",
+        "description": "启动查询延迟",
+        "tooltip": "设置 Usage Deck 启动后首次触发 provider 刷新的等待时间。"
     }
 }

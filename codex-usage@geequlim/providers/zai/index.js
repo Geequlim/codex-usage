@@ -6,6 +6,7 @@ const Formatters = require("./lib/shared/formatters");
 const {
     createWrappedLabel,
     applySecondaryTextStyle,
+    createProviderTitle,
     UsageMeter,
 } = require("./lib/ui");
 const { createTranslator } = require("./providers/zai/strings");
@@ -180,11 +181,11 @@ function buildSummaryCard(data, runtime, t) {
         style_class: "codex-hero-header",
         x_expand: true
     });
-    header.add_actor(new St.Label({
-        text: t("title"),
-        style_class: "codex-hero-title",
-        x_expand: true
-    }));
+    header.add_actor(createProviderTitle(
+        runtime.assets.resolve("panelIndicator"),
+        t("title"),
+        "codex-hero-title"
+    ).actor);
     let level = data && data.level ? Formatters.formatPlanName(String(data.level)) : t("unknown");
     header.add_actor(new St.Label({
         text: level,

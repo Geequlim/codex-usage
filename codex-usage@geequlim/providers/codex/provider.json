@@ -7,7 +7,8 @@
     "order": 10,
     "assets": {
         "panelSymbolic": "panel-symbolic.svg",
-        "panelLegacy": "panel.svg"
+        "panelLegacy": "panel.svg",
+        "panelIndicator": "v4/panel-symbolic.svg"
     },
     "capabilities": {
         "panel": true,
