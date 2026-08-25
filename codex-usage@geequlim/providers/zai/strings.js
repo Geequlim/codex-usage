@@ -19,6 +19,7 @@ const DICTIONARIES = {
         unavailable: "Unavailable",
         unknown: "unknown",
         quotaLine: "{type} | Used {used} / {total} | {percent}%",
+        quotaPercentLine: "{type} | Used {percent}%",
         noReset: "No reset time",
         usedLeftDetail: "Used {used} | Left {left}",
         resetsDash: "Resets -"
@@ -43,6 +44,7 @@ const DICTIONARIES = {
         unavailable: "不可用",
         unknown: "未知",
         quotaLine: "{type} | 已用 {used} / {total} | {percent}%",
+        quotaPercentLine: "{type} | 已用 {percent}%",
         noReset: "无重置时间",
         usedLeftDetail: "已用 {used} | 剩余 {left}",
         resetsDash: "重置时间 -"

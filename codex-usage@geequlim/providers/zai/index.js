@@ -32,10 +32,6 @@ function formatUsageValue(limit) {
         return String(Math.round(limit.percentage)) + "%";
     }
 
-    if (typeof limit.number === "number" && typeof limit.unit === "number") {
-        return String(limit.number) + "/" + String(limit.unit);
-    }
-
     return "-";
 }
 
@@ -44,11 +40,27 @@ function formatTotalValue(limit) {
         return Formatters.formatCount(limit.usage);
     }
 
-    if (typeof limit.unit === "number") {
-        return String(limit.unit);
-    }
-
     return "-";
+}
+
+function hasAbsoluteUsage(limit) {
+    return typeof limit.current_value === "number" && typeof limit.usage === "number";
+}
+
+function appendQuotaLine(lines, typeLabel, limit, t) {
+    if (hasAbsoluteUsage(limit)) {
+        lines.push(t("quotaLine", {
+            type: typeLabel,
+            used: formatUsageValue(limit),
+            total: formatTotalValue(limit),
+            percent: formatPercent(limit)
+        }));
+    } else {
+        lines.push(t("quotaPercentLine", {
+            type: typeLabel,
+            percent: formatPercent(limit)
+        }));
+    }
 }
 
 function formatPercent(limit) {
@@ -96,11 +108,11 @@ function classifyWindow(limit) {
         return null;
     }
 
-    if (limit.type === "TOKENS_LIMIT" && limit.unit === 3 && limit.number === 5) {
+    if (limit.type === "TOKENS_LIMIT" && limit.unit === 3) {
         return "5h";
     }
 
-    if (limit.type === "TOKENS_LIMIT" && limit.unit === 6 && limit.number === 1) {
+    if (limit.type === "TOKENS_LIMIT" && limit.unit === 6) {
         return "7d";
     }
 
@@ -111,19 +123,6 @@ function classifyWindow(limit) {
 
     if (type === "TOKENS_LIMIT") {
         return "5h";
-    }
-
-    if (typeof limit.next_reset_time === "number") {
-        let delta = limit.next_reset_time - Date.now();
-        if (delta > 0) {
-            let hours = delta / (1000 * 60 * 60);
-            if (hours <= 12) {
-                return "5h";
-            }
-            if (hours >= 24 * 3) {
-                return "7d";
-            }
-        }
     }
 
     return null;
@@ -265,12 +264,7 @@ module.exports = {
                 let windows = quotaWindows(data);
                 [windows.primary, windows.secondary].filter(Boolean).forEach(window => {
                     let limit = window.limit;
-                    lines.push(t("quotaLine", {
-                        type: windowName(window.kind, t),
-                        used: formatUsageValue(limit),
-                        total: formatTotalValue(limit),
-                        percent: formatPercent(limit)
-                    }));
+                    appendQuotaLine(lines, windowName(window.kind, t), limit, t);
                     if (limit.next_reset_time) {
                         let formatted = Formatters.formatAbsoluteTime(Math.floor(limit.next_reset_time / 1000));
                         if (formatted !== "-") {
@@ -281,12 +275,7 @@ module.exports = {
 
                 if (lines.length === 0) {
                     (data.limits || []).forEach(limit => {
-                        lines.push(t("quotaLine", {
-                            type: limitTitle(limit),
-                            used: formatUsageValue(limit),
-                            total: formatTotalValue(limit),
-                            percent: formatPercent(limit)
-                        }));
+                        appendQuotaLine(lines, limitTitle(limit), limit, t);
                     });
                 }
                 return [{
