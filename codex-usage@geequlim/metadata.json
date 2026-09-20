@@ -4,11 +4,11 @@
   "description": "Provider-driven usage and quota cards for the Cinnamon panel",
   "author": "Geequlim",
   "website": "https://github.com/Geequlim/codex-usage",
-  "version": "1.2.0",
+  "version": "1.3.0",
   "cinnamon-version": [
     "6.6"
   ],
-  "last-edited": 1774793200,
+  "last-edited": 1789865539,
   "icon": "utilities-terminal",
   "max-instances": "-1"
 }

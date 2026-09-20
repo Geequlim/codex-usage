@@ -28,7 +28,7 @@ Examples:
 - `GitHub Copilot`: requires the `gh` CLI and Copilot access
 - `z.ai`: requires `Z_AI_API_KEY`
 - `DeepSeek`: requires `DEEPSEEK_API_KEY`
-- `OpenCode Go`: requires `OPENCODE_GO_WORKSPACE_ID` and `OPENCODE_GO_AUTH_COOKIE`
+- `OpenCode Go`: requires `OPENCODE_GO_API_KEY` (create one in the OpenCode Console under Settings -> API Keys)
 
 ## Install
 
@@ -76,8 +76,7 @@ Common examples:
 ```ini
 Z_AI_API_KEY=your-zai-key
 DEEPSEEK_API_KEY=your-deepseek-key
-OPENCODE_GO_WORKSPACE_ID=your-workspace-id
-OPENCODE_GO_AUTH_COOKIE=your-cookie
+OPENCODE_GO_API_KEY=your-opencode-key
 HTTP_PROXY=http://127.0.0.1:1080
 HTTPS_PROXY=http://127.0.0.1:1080
 ALL_PROXY=socks5://127.0.0.1:1080

@@ -28,7 +28,7 @@
 - `GitHub Copilot`：需要 `gh` CLI 且账号具备 Copilot 权限
 - `z.ai`：需要 `Z_AI_API_KEY`
 - `DeepSeek`：需要 `DEEPSEEK_API_KEY`
-- `OpenCode Go`：需要 `OPENCODE_GO_WORKSPACE_ID` 和 `OPENCODE_GO_AUTH_COOKIE`
+- `OpenCode Go`：需要 `OPENCODE_GO_API_KEY`（在 OpenCode Console 的 Settings -> API Keys 里创建）
 
 ## 安装
 
@@ -76,8 +76,7 @@ chmod +x ~/.local/share/cinnamon/applets/codex-usage@geequlim/providers/*/fetch_
 ```ini
 Z_AI_API_KEY=你的 z.ai key
 DEEPSEEK_API_KEY=你的 DeepSeek key
-OPENCODE_GO_WORKSPACE_ID=你的 workspace id
-OPENCODE_GO_AUTH_COOKIE=你的 cookie
+OPENCODE_GO_API_KEY=你的 OpenCode key
 HTTP_PROXY=http://127.0.0.1:1080
 HTTPS_PROXY=http://127.0.0.1:1080
 ALL_PROXY=socks5://127.0.0.1:1080
