@@ -39,11 +39,28 @@ function resolveProviderAsset(providerDir, assets, key) {
     return GLib.build_filenamev([providerDir, String(value)]);
 }
 
+function loadProviderEntry(entryPath) {
+    if (typeof imports.ui.extension.getCurrentExtension !== "function") {
+        return require(entryPath);
+    }
+
+    // Cinnamon 6.8's xlet loader cannot require absolute paths, including user providers.
+    let [ok, contents] = GLib.file_get_contents(entryPath);
+    if (!ok) {
+        throw new Error("Unable to read " + entryPath);
+    }
+
+    let providerModule = { exports: {} };
+    let evaluate = new Function("require", "module", "exports", ByteArray.toString(contents));
+    evaluate(require, providerModule, providerModule.exports);
+    return providerModule.exports;
+}
+
 function normalizeDescriptor(providerDir, manifestPath, raw, source) {
     let directoryName = GLib.path_get_basename(providerDir);
     let entry = String(raw.entry || "index.js").trim();
     let entryPath = GLib.build_filenamev([providerDir, entry]);
-    let moduleExports = require(entryPath);
+    let moduleExports = loadProviderEntry(entryPath);
 
     if (!moduleExports || typeof moduleExports.create !== "function") {
         throw new Error("Provider entry must export create(): " + entryPath);

@@ -121,8 +121,7 @@ UsageMeter.prototype = {
 
         this._bar = new St.DrawingArea({
             style_class: "codex-progress-bar",
-            x_expand: true,
-            height: 14
+            x_expand: true
         });
         this._bar.connect("repaint", this._onRepaint.bind(this));
         this.actor.add_actor(this._bar);
@@ -224,8 +223,7 @@ SummaryCard.prototype = {
 
         this._bar = new St.DrawingArea({
             style_class: "codex-progress-bar",
-            x_expand: true,
-            height: 14
+            x_expand: true
         });
         this._bar.connect("repaint", this._onRepaint.bind(this));
         this.actor.add_actor(this._bar);
